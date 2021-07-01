@@ -1,0 +1,265 @@
+#!/usr/bin/python3
+"""
+mailheadercheck - a milter service for Postfix
+
+Copyright (C) 2021, mail.de / Michael Kliewe <m.kliewe@team.mail.de>
+
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice,
+   this list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+"""
+import argparse
+import os
+import sys
+import syslog
+
+from syslog import *
+from syslog import syslog as syslog
+from email.utils import parsedate, getaddresses
+
+import Milter
+
+NAME = "mailheadercheck"
+
+try:
+    # noinspection PyUnresolvedReferences
+    import setproctitle
+    setproctitle.setproctitle(NAME)
+except ImportError:
+    pass
+
+
+# Defaults
+BINDADDR = "127.0.0.1"
+PORT = 30073
+MILTERUSER = "milter"
+MILTERGROUP = "milter"
+VERSION = "2021.1"
+
+__version__ = VERSION
+__author__ = "Michael Kliewe <m.kliewe@team.mail.de>"
+__copyright__ = "Copyright (C) 2021 mail.de / Michael Kliewe"
+
+
+# noinspection PyUnresolvedReferences
+class Cfg(object):
+    """Helper class for some configuration parameters
+    """
+    action = Milter.REJECT
+
+
+# noinspection PyIncorrectDocstring,PyUnresolvedReferences
+class MailHeaderCheckMilter(Milter.Base):
+    """
+    Milter that verifies RFC-validity of some headers (Date, Subject, From)
+    """
+
+    def __init__(self):
+        self.__header = None
+        self.__from_counter = 0
+        self.__subject_counter = 0
+        self.__date_counter = 0
+
+    @Milter.noreply
+    def envfrom(self, mailfrom, *dummy):
+        """Callback that is called when MAIL FROM: is recognized. This also
+        is the most earliest time, where we can collect nearly all connection
+        specific information.
+        """
+
+        self.__header = dict()
+        self.__from_counter = 0
+        self.__subject_counter = 0
+        self.__date_counter = 0
+
+        return Milter.CONTINUE
+
+    @Milter.noreply
+    def header(self, name, hval):
+        """header callback gets called for each header
+        """
+        if name.lower() == "from":
+            self.__from_counter += 1
+            self.__header[name.lower()] = hval
+
+        if name.lower() == "subject":
+            self.__subject_counter += 1
+            self.__header[name.lower()] = hval
+
+        if name.lower() == "date":
+            self.__date_counter += 1
+            self.__header[name.lower()] = hval
+
+        return Milter.CONTINUE
+
+    def eoh(self):
+        """
+        eoh - end of header. Gets called after all headers have been proccessed
+        """
+
+        error_response_text = ""
+
+        if self.__from_counter == 0:
+            log_header_from = "missing-from-header"
+            error_response_text = "Missing From:-Header"
+            result = Milter.REJECT
+            actiontaken = Cfg.action
+        elif self.__from_counter > 1:
+            log_header_from = "multiple-from-headers"
+            error_response_text = "Multiple From:-Headers"
+            result = Milter.REJECT
+            actiontaken = Cfg.action
+        else:
+            log_header_from = self.__header['from']
+
+        if self.__subject_counter == 0:   # NOT an error
+            log_header_subject = "missing-subject-header"            
+        elif self.__subject_counter > 1:
+            log_header_subject = "multiple-subject-headers"
+            error_response_text = "Multiple Subject:-Headers"
+            result = Milter.REJECT
+            actiontaken = Cfg.action
+        elif len(self.__header['subject']) > 2000:
+            log_header_subject = "subject-header-too-long"
+            error_response_text = "Subject:-Header too long"
+            result = Milter.REJECT
+            actiontaken = Cfg.action
+        else:
+            log_header_subject = self.__header['subject']
+
+        if self.__date_counter == 0:
+            log_header_date = "missing-date-header"
+            error_response_text = "Missing Date:-Header"
+            result = Milter.REJECT
+            actiontaken = Cfg.action
+        elif self.__date_counter > 1:
+            log_header_date = "multiple-date-headers"
+            error_response_text = "Multiple Date:-Headers"
+            result = Milter.REJECT
+            actiontaken = Cfg.action
+        else:
+            log_header_date = self.__header['date']
+
+        if 'result' not in locals():
+            # We do some basic syntax checks
+            # We know that we have exactly one From, zero or one Subject and one Date Header
+
+            # From:-Header checks
+            all_emails = getaddresses([self.__header['from']])
+            all_emails = [x[1].lower() for x in all_emails]
+            all_emails = set(all_emails)
+
+            if len(all_emails) != 1:  # While technically RFC conform, we do not allow multiple addresses in the From:-header
+                log_header_from = ",".join([email_addr for email_addr in all_emails])
+                error_response_text = "Zero or too many addresses in From:-Header"
+                result = Milter.REJECT
+                actiontaken = Cfg.action
+            elif self.__header['date'] == "":
+                error_response_text = "Empty Date:-Header"
+                result = Milter.REJECT
+                actiontaken = Cfg.action
+            elif parsedate(self.__header['date']) == None:
+                error_response_text = "Invalid Date:-Header"
+                result = Milter.REJECT
+                actiontaken = Cfg.action
+            else:
+                result = Milter.ACCEPT
+                actiontaken = Milter.ACCEPT
+
+        # This is the expected action that would be used in production mode
+        if result == Milter.REJECT:
+            result_string = "reject"
+        else:
+            result_string = "accept"
+
+        # This is the effective action that is taken. If enabled, the dry-run
+        # mode will accept all emails
+        if actiontaken == Milter.REJECT:
+            actiontaken_string = "reject"
+            self.setreply("554", xcode="5.7.0", msg="Header violation: " + error_response_text)
+        else:
+            actiontaken_string = "accept"
+
+        if Cfg.action == Milter.ACCEPT:
+            dry_run = "yes"
+        else:
+            dry_run = "no"
+
+        syslog(LOG_INFO,
+            "qid={0} header_from=\"{1}\" header_subject=\"{2}\" header_date=\"{3}\" error_response_text=\"{4}\" "
+            "result={5} actiontaken={6} dry_run={7}".format(
+                self.getsymval('i'), log_header_from.replace('\n', ' ').replace('\r', ''), 
+                log_header_subject.replace('\n', ' ').replace('\r', ''), 
+                log_header_date.replace('\n', ' ').replace('\r', ''), error_response_text,
+                result_string, actiontaken_string, dry_run
+            ))
+
+        return actiontaken
+
+
+# noinspection PyProtectedMember,PyUnresolvedReferences
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(epilog=NAME)
+
+    parser.add_argument("--socket", "-s",
+                        type=str,
+                        default="inet:{0}@{1}".format(PORT, BINDADDR),
+                        help="IPv4, IPv6 or unix socket (default: %(default)s)")
+    parser.add_argument("--syslog_name", "-n",
+                        type=str,
+                        default=NAME,
+                        help="Syslog name (default: %(default)s)")
+    parser.add_argument("--syslog_facility", "-N",
+                        type=str,
+                        default="mail",
+                        help="Syslog facility (default: %(default)s)")
+    parser.add_argument("--action", "-a",
+                        default="reject",
+                        choices=["accept", "reject"],
+                        help="If header check fails: accept, reject. "
+                             "(default: %(default)s)")
+
+    config = parser.parse_args()
+
+    if config.action:
+        if config.action == "accept":
+            Cfg.action = Milter.ACCEPT
+        elif config.action == "reject":
+            Cfg.action = Milter.REJECT
+
+    facility_name = "LOG_" + config.syslog_facility.upper()
+    facility = getattr(syslog, facility_name, LOG_MAIL)
+
+    openlog(config.syslog_name, LOG_PID, facility)
+
+    syslog(LOG_NOTICE, "{0}-{1} milter startup".format(NAME, VERSION))
+
+    Milter.factory = MailHeaderCheckMilter
+
+    flags = Milter.ADDHDRS
+    Milter.set_flags(flags)
+
+    Milter.runmilter(NAME, config.socket, timeout=300)
+
+    sys.exit(0)
+
+# vim: expandtab ts=4 sw=4

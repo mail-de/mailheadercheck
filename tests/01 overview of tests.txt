@@ -1,0 +1,28 @@
+From        Subject      Date         Test
+0           0            0            test-01
+1           0            0            test-02
+2           0            0            test-03
+0           1            0            test-04
+0           2            0            test-05
+0           0            1            test-06
+0           0            2            test-07
+1           1            0            test-08
+1           0            1            test-09
+0           1            1            test-10
+1           1            1            test-11
+2           1            1            test-12
+1           2            1            test-13
+1           1            2            test-14
+2           2            2            test-15
+  
+Additional tests:
+~~~~~~~~~~~~~~~~~
+old From:-Header format                test-20
+lower case "from:"-Header              test-21
+Empty From:-Header                     test-22
+Empty Subject:-Header                  test-23
+Empty Date:-Header                     test-24
+From:-Header with multiple addresses   test-25
+From:-Header with quotes               test-26
+Invalid Date:-Header                   test-27
+Subject:-Header too long               test-28  Test currently disabled, because a Subject with 2000 characters crashes miltertest
