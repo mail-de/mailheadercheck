@@ -138,7 +138,7 @@ class MailHeaderCheckMilter(Milter.Base):
             error_response_text = "Multiple Subject:-Headers"
             result = Milter.REJECT
             actiontaken = Cfg.action
-        elif len(self.__header['subject']) > 2000:
+        elif len(self.__header['subject']) > 5000:
             log_header_subject = "subject-header-too-long"
             error_response_text = "Subject:-Header too long"
             result = Milter.REJECT
