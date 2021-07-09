@@ -132,7 +132,7 @@ class MailHeaderCheckMilter(Milter.Base):
             log_header_from = self.__header['from']
 
         if self.__subject_counter == 0:   # NOT an error
-            log_header_subject = "missing-subject-header"            
+            log_header_subject = "missing-subject-header"
         elif self.__subject_counter > 1:
             log_header_subject = "multiple-subject-headers"
             error_response_text = "Multiple Subject:-Headers"
@@ -207,8 +207,8 @@ class MailHeaderCheckMilter(Milter.Base):
         syslog(LOG_INFO,
             "qid={0} header_from=\"{1}\" header_subject=\"{2}\" header_date=\"{3}\" error_response_text=\"{4}\" "
             "result={5} actiontaken={6} dry_run={7}".format(
-                self.getsymval('i'), log_header_from.replace('\n', ' ').replace('\r', ''), 
-                log_header_subject.replace('\n', ' ').replace('\r', ''), 
+                self.getsymval('i'), log_header_from.replace('\n', ' ').replace('\r', ''),
+                log_header_subject.replace('\n', ' ').replace('\r', ''),
                 log_header_date.replace('\n', ' ').replace('\r', ''), error_response_text,
                 result_string, actiontaken_string, dry_run
             ))

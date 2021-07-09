@@ -24,6 +24,7 @@ mailheadercheck script into /usr/local/sbin/. Place the systemd unit file into
 /etc/systemd/system/ and create a user named "milter":
 
 ```
+sudo apt install libmilter-dev
 sudo apt install python3-pip
 sudo pip3 install pymilter
 sudo cp mailheadercheck /usr/local/sbin/mailheadercheck
