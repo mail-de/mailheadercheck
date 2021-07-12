@@ -53,7 +53,7 @@ BINDADDR = "127.0.0.1"
 PORT = 30073
 MILTERUSER = "milter"
 MILTERGROUP = "milter"
-VERSION = "2021.1"
+VERSION = "2021.3"
 
 __version__ = VERSION
 __author__ = "Michael Kliewe <m.kliewe@team.mail.de>"
@@ -78,6 +78,13 @@ class MailHeaderCheckMilter(Milter.Base):
         self.__from_counter = 0
         self.__subject_counter = 0
         self.__date_counter = 0
+        self.__sender_counter = 0
+        self.__replyto_counter = 0
+        self.__to_counter = 0
+        self.__cc_counter = 0
+        self.__messageid_counter = 0
+        self.__inreplyto_counter = 0
+        self.__references_counter = 0
 
     @Milter.noreply
     def envfrom(self, mailfrom, *dummy):
@@ -90,6 +97,13 @@ class MailHeaderCheckMilter(Milter.Base):
         self.__from_counter = 0
         self.__subject_counter = 0
         self.__date_counter = 0
+        self.__sender_counter = 0
+        self.__replyto_counter = 0
+        self.__to_counter = 0
+        self.__cc_counter = 0
+        self.__messageid_counter = 0
+        self.__inreplyto_counter = 0
+        self.__references_counter = 0
 
         return Milter.CONTINUE
 
@@ -107,6 +121,34 @@ class MailHeaderCheckMilter(Milter.Base):
 
         if name.lower() == "date":
             self.__date_counter += 1
+            self.__header[name.lower()] = hval
+
+        if name.lower() == "sender":
+            self.__sender_counter += 1
+            self.__header[name.lower()] = hval
+
+        if name.lower() == "reply-to":
+            self.__replyto_counter += 1
+            self.__header[name.lower()] = hval
+
+        if name.lower() == "to":
+            self.__to_counter += 1
+            self.__header[name.lower()] = hval
+
+        if name.lower() == "cc":
+            self.__cc_counter += 1
+            self.__header[name.lower()] = hval
+
+        if name.lower() == "message-id":
+            self.__messageid_counter += 1
+            self.__header[name.lower()] = hval
+
+        if name.lower() == "in-reply-to":
+            self.__inreplyto_counter += 1
+            self.__header[name.lower()] = hval
+
+        if name.lower() == "references":
+            self.__references_counter += 1
             self.__header[name.lower()] = hval
 
         return Milter.CONTINUE
@@ -159,31 +201,73 @@ class MailHeaderCheckMilter(Milter.Base):
         else:
             log_header_date = self.__header['date']
 
+        if self.__sender_counter > 1:
+            error_response_text = "Multiple Sender:-Headers"
+            result = Milter.REJECT
+            actiontaken = Cfg.action
+
+        if self.__replyto_counter > 1:
+            error_response_text = "Multiple Reply-To:-Headers"
+            result = Milter.REJECT
+            actiontaken = Cfg.action
+
+        if self.__to_counter > 1:
+            error_response_text = "Multiple To:-Headers"
+            result = Milter.REJECT
+            actiontaken = Cfg.action
+
+        if self.__cc_counter > 1:
+            error_response_text = "Multiple Cc:-Headers"
+            result = Milter.REJECT
+            actiontaken = Cfg.action
+
+        if self.__messageid_counter > 1:
+            error_response_text = "Multiple Message-ID:-Headers"
+            result = Milter.REJECT
+            actiontaken = Cfg.action
+
+        if self.__inreplyto_counter > 1:
+            error_response_text = "Multiple In-Reply-To:-Headers"
+            result = Milter.REJECT
+            actiontaken = Cfg.action
+
+        if self.__references_counter > 1:
+            error_response_text = "Multiple References:-Headers"
+            result = Milter.REJECT
+            actiontaken = Cfg.action
+
         if 'result' not in locals():
             # We do some basic syntax checks
             # We know that we have exactly one From, zero or one Subject and one Date Header
 
-            # From:-Header checks
-            all_emails = getaddresses([self.__header['from']])
-            all_emails = [x[1].lower() for x in all_emails]
-            all_emails = set(all_emails)
+            try:
+                all_emails = getaddresses([self.__header['from']])
+                all_emails = [x[1].lower() for x in all_emails]
+                all_emails = set(all_emails)
 
-            if len(all_emails) != 1:  # While technically RFC conform, we do not allow multiple addresses in the From:-header
-                log_header_from = ",".join([email_addr for email_addr in all_emails])
-                error_response_text = "Zero or too many addresses in From:-Header"
-                result = Milter.REJECT
-                actiontaken = Cfg.action
-            elif self.__header['date'] == "":
-                error_response_text = "Empty Date:-Header"
-                result = Milter.REJECT
-                actiontaken = Cfg.action
-            elif parsedate(self.__header['date']) == None:
-                error_response_text = "Invalid Date:-Header"
-                result = Milter.REJECT
-                actiontaken = Cfg.action
-            else:
+                if len(all_emails) != 1:  # While technically RFC conform, we do not allow multiple addresses in the From:-header
+                    log_header_from = ",".join([email_addr for email_addr in all_emails])
+                    error_response_text = "Zero or too many addresses in From:-Header"
+                    result = Milter.REJECT
+                    actiontaken = Cfg.action
+                elif self.__header['date'] == "":
+                    error_response_text = "Empty Date:-Header"
+                    result = Milter.REJECT
+                    actiontaken = Cfg.action
+                elif parsedate(self.__header['date']) == None:
+                    error_response_text = "Invalid Date:-Header"
+                    result = Milter.REJECT
+                    actiontaken = Cfg.action
+                else:
+                    result = Milter.ACCEPT
+                    actiontaken = Milter.ACCEPT
+            except Exception:
+                # While parsing headers, there could be Exceptions.
+                # If an Exception is thrown, we don't want the Milter to crash. For now, we simply ACCEPT the email.
+                # Maybe in the future we block the email, because it's invalid/broken?
                 result = Milter.ACCEPT
                 actiontaken = Milter.ACCEPT
+
 
         # This is the expected action that would be used in production mode
         if result == Milter.REJECT:

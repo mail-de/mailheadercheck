@@ -14,7 +14,7 @@ From        Subject      Date         Test
 1           2            1            test-13
 1           1            2            test-14
 2           2            2            test-15
-  
+
 Additional tests:
 ~~~~~~~~~~~~~~~~~
 old From:-Header format                test-20
@@ -26,3 +26,27 @@ From:-Header with multiple addresses   test-25
 From:-Header with quotes               test-26
 Invalid Date:-Header                   test-27
 Subject:-Header too long               test-28  Test currently disabled, because a Subject with 2000 characters crashes miltertest
+From:-Header with Umlauts not encoded  test-29
+
+
+0 Sender:-Headers                      test-50
+1 Sender:-Header                       test-51
+2 Sender:-Headers                      test-52
+0 Reply-To:-Headers                    test-53
+1 Reply-To:-Header                     test-54
+2 Reply-To:-Headers                    test-55
+0 To:-Headers                          test-56
+1 To:-Header                           test-57
+2 To:-Headers                          test-58
+0 Cc:-Headers                          test-59
+1 Cc:-Header                           test-60
+2 Cc:-Headers                          test-61
+0 Message-ID:-Headers                  test-62
+1 Message-ID:-Header                   test-63
+2 Message-ID:-Headers                  test-64
+0 In-Reply-To:-Headers                 test-65
+1 In-Reply-To:-Header                  test-66
+2 In-Reply-To:-Headers                 test-67
+0 References:-Headers                  test-68
+1 References:-Header                   test-69
+2 References:-Headers                  test-70

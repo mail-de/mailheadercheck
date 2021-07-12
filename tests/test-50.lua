@@ -1,5 +1,5 @@
 -- Echo that the test is starting
-mt.echo("*** begin test-27 - Invalid Date:-Header")
+mt.echo("*** begin test-50 - 1 From, 1 Subject, 1 Date, 0 Sender")
 
 -- start the filter
 mt.startfilter("./mailheadercheck", "--socket", "inet:40000@127.0.0.1")
@@ -34,7 +34,7 @@ end
 if mt.getreply(conn) ~= SMFIR_CONTINUE then
      error "mt.header(Subject) unexpected reply"
 end
-if mt.header(conn, "Date", "öäü123") ~= nil then
+if mt.header(conn, "Date", "Wed, 23 Jun 2021 16:30:55 +0200") ~= nil then
      error "mt.header(Date) failed"
 end
 if mt.getreply(conn) ~= SMFIR_CONTINUE then
@@ -44,7 +44,7 @@ end
 if mt.eoh(conn) ~= nil then
      error "mt.eoh() failed"
 end
-if mt.getreply(conn) ~= SMFIR_REPLYCODE then
+if mt.getreply(conn) ~= SMFIR_ACCEPT then
      error "mt.eoh() unexpected reply"
 end
 
