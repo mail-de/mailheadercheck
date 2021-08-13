@@ -111,45 +111,49 @@ class MailHeaderCheckMilter(Milter.Base):
     def header(self, name, hval):
         """header callback gets called for each header
         """
-        if name.lower() == "from":
-            self.__from_counter += 1
-            self.__header[name.lower()] = hval
 
-        if name.lower() == "subject":
-            self.__subject_counter += 1
-            self.__header[name.lower()] = hval
+        try:
+            if name.lower() == "from":
+                self.__from_counter += 1
+                self.__header[name.lower()] = hval
 
-        if name.lower() == "date":
-            self.__date_counter += 1
-            self.__header[name.lower()] = hval
+            if name.lower() == "subject":
+                self.__subject_counter += 1
+                self.__header[name.lower()] = hval
 
-        if name.lower() == "sender":
-            self.__sender_counter += 1
-            self.__header[name.lower()] = hval
+            if name.lower() == "date":
+                self.__date_counter += 1
+                self.__header[name.lower()] = hval
 
-        if name.lower() == "reply-to":
-            self.__replyto_counter += 1
-            self.__header[name.lower()] = hval
+            if name.lower() == "sender":
+                self.__sender_counter += 1
+                self.__header[name.lower()] = hval
 
-        if name.lower() == "to":
-            self.__to_counter += 1
-            self.__header[name.lower()] = hval
+            if name.lower() == "reply-to":
+                self.__replyto_counter += 1
+                self.__header[name.lower()] = hval
 
-        if name.lower() == "cc":
-            self.__cc_counter += 1
-            self.__header[name.lower()] = hval
+            if name.lower() == "to":
+                self.__to_counter += 1
+                self.__header[name.lower()] = hval
 
-        if name.lower() == "message-id":
-            self.__messageid_counter += 1
-            self.__header[name.lower()] = hval
+            if name.lower() == "cc":
+                self.__cc_counter += 1
+                self.__header[name.lower()] = hval
 
-        if name.lower() == "in-reply-to":
-            self.__inreplyto_counter += 1
-            self.__header[name.lower()] = hval
+            if name.lower() == "message-id":
+                self.__messageid_counter += 1
+                self.__header[name.lower()] = hval
 
-        if name.lower() == "references":
-            self.__references_counter += 1
-            self.__header[name.lower()] = hval
+            if name.lower() == "in-reply-to":
+                self.__inreplyto_counter += 1
+                self.__header[name.lower()] = hval
+
+            if name.lower() == "references":
+                self.__references_counter += 1
+                self.__header[name.lower()] = hval
+        except Exception:
+            pass         # do nothing
 
         return Milter.CONTINUE
 
