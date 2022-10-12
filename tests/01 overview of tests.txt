@@ -50,3 +50,5 @@ From:-Header with Umlauts not encoded  test-29
 0 References:-Headers                  test-68
 1 References:-Header                   test-69
 2 References:-Headers                  test-70
+
+1 From with " and ', log_json=1        test-80

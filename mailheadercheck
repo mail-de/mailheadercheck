@@ -28,6 +28,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 """
 import argparse
+import json
 import os
 import sys
 import syslog
@@ -65,6 +66,7 @@ class Cfg(object):
     """Helper class for some configuration parameters
     """
     action = Milter.REJECT
+    log_json = 0
 
 
 # noinspection PyIncorrectDocstring,PyUnresolvedReferences
@@ -288,14 +290,30 @@ class MailHeaderCheckMilter(Milter.Base):
         else:
             dry_run = "no"
 
-        syslog(LOG_INFO,
-            "qid={0} header_from=\"{1}\" header_subject=\"{2}\" header_date=\"{3}\" error_response_text=\"{4}\" "
-            "result={5} actiontaken={6} dry_run={7}".format(
-                self.getsymval('i'), log_header_from.replace('\n', ' ').replace('\r', ''),
+        if Cfg.log_json == 1:
+            log_output = json.dumps({
+                'qid': self.getsymval('i'),
+                'header_from': log_header_from.replace('\n', ' ').replace('\r', ''),
+                'header_subject': log_header_subject.replace('\n', ' ').replace('\r', ''),
+                'header_date': log_header_date.replace('\n', ' ').replace('\r', ''),
+                'error_response_text': error_response_text,
+                'result': result_string,
+                'actiontaken': actiontaken_string,
+                'dry_run': dry_run
+            })
+        else:
+            log_output = "qid={0} header_from=\"{1}\" header_subject=\"{2}\" header_date=\"{3}\" error_response_text=\"{4}\" result={5} actiontaken={6} dry_run={7}".format(
+                self.getsymval('i'),
+                log_header_from.replace('\n', ' ').replace('\r', ''),
                 log_header_subject.replace('\n', ' ').replace('\r', ''),
-                log_header_date.replace('\n', ' ').replace('\r', ''), error_response_text,
-                result_string, actiontaken_string, dry_run
-            ))
+                log_header_date.replace('\n', ' ').replace('\r', ''),
+                error_response_text,
+                result_string,
+                actiontaken_string,
+                dry_run
+            )
+
+        syslog(LOG_INFO, log_output)
 
         return actiontaken
 
@@ -321,6 +339,11 @@ if __name__ == "__main__":
                         choices=["accept", "reject"],
                         help="If header check fails: accept, reject. "
                              "(default: %(default)s)")
+    parser.add_argument("--log_json",
+                        type=int,
+                        default=0,
+                        choices=range(0,2),
+                        help="output logs as json (default: %(default)i)")
 
     config = parser.parse_args()
 
@@ -329,6 +352,9 @@ if __name__ == "__main__":
             Cfg.action = Milter.ACCEPT
         elif config.action == "reject":
             Cfg.action = Milter.REJECT
+
+    if config.log_json:
+        Cfg.log_json = 1
 
     facility_name = "LOG_" + config.syslog_facility.upper()
     facility = getattr(syslog, facility_name, LOG_MAIL)
