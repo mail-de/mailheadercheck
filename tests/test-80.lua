@@ -22,7 +22,7 @@ if mt.getreply(conn) ~= SMFIR_CONTINUE then
 end
 
 -- send From-Header with "
-if mt.header(conn, "From", "displayname with space \"doublequotes\" and a 'singlequotes' <sender@test.example.com>") ~= nil then
+if mt.header(conn, "From", "displayname with space, \"doublequotes\" and 'singlequotes' <sender@test.example.com>") ~= nil then
      error "mt.header(From) failed"
 end
 if mt.getreply(conn) ~= SMFIR_CONTINUE then
