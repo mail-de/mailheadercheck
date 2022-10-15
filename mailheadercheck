@@ -316,6 +316,7 @@ class MailHeaderCheckMilter(Milter.Base):
 
         if Cfg.syslog_disabled:
             sys.stdout.write(log_output + '\n')
+            sys.stdout.flush()
         else:
             syslog(LOG_INFO, log_output)
 
@@ -368,6 +369,7 @@ if __name__ == "__main__":
     if config.syslog_disabled:
         Cfg.syslog_disabled = 1
         sys.stdout.write("{0}-{1} milter startup".format(NAME, VERSION) + '\n')
+        sys.stdout.flush()
     else:
         facility_name = "LOG_" + config.syslog_facility.upper()
         facility = getattr(syslog, facility_name, LOG_MAIL)
