@@ -65,11 +65,15 @@ If you need a different port or IP address, use one of the following parameters:
 
 ### Configuration of syslog
 
-You can also change the syslog name and facility:
+You can also change the syslog name and facility or
+disable the use of syslog at all. Logs are written to stdout in this case and
+`syslog_name` and `syslog_facility` are ignored. This is intended for operation
+in docker containers.
 
 ```
 --syslog_name mailheadercheck
 --syslog_facility mail
+--syslog_disabled
 ```
 
 ### Start the systemd service

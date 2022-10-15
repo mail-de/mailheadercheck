@@ -2,7 +2,7 @@
 mt.echo("*** begin test-80 - 1 From, 0 Subject, 0 Date, log_json=1")
 
 -- start the filter
-mt.startfilter("./mailheadercheck", "--socket", "inet:40000@127.0.0.1", "--log_json=1")
+mt.startfilter("./mailheadercheck", "--socket", "inet:40000@127.0.0.1", "--log_json=1", "--syslog_disabled=1")
 mt.sleep(2)
 
 -- try to connect to it

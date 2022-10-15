@@ -67,6 +67,7 @@ class Cfg(object):
     """
     action = Milter.REJECT
     log_json = 0
+    syslog_disabled = 0
 
 
 # noinspection PyIncorrectDocstring,PyUnresolvedReferences
@@ -313,7 +314,10 @@ class MailHeaderCheckMilter(Milter.Base):
                 dry_run
             )
 
-        syslog(LOG_INFO, log_output)
+        if Cfg.syslog_disabled:
+            sys.stdout.write(log_output + '\n')
+        else:
+            syslog(LOG_INFO, log_output)
 
         return actiontaken
 
@@ -344,6 +348,11 @@ if __name__ == "__main__":
                         default=0,
                         choices=range(0,2),
                         help="output logs as json (default: %(default)i)")
+    parser.add_argument("--syslog_disabled",
+                        type=int,
+                        default=0,
+                        choices=range(0,2),
+                        help="write logs to STDOUT (default: %(default)i)")
 
     config = parser.parse_args()
 
@@ -356,12 +365,16 @@ if __name__ == "__main__":
     if config.log_json:
         Cfg.log_json = 1
 
-    facility_name = "LOG_" + config.syslog_facility.upper()
-    facility = getattr(syslog, facility_name, LOG_MAIL)
+    if config.syslog_disabled:
+        Cfg.syslog_disabled = 1
+        sys.stdout.write("{0}-{1} milter startup".format(NAME, VERSION) + '\n')
+    else:
+        facility_name = "LOG_" + config.syslog_facility.upper()
+        facility = getattr(syslog, facility_name, LOG_MAIL)
 
-    openlog(config.syslog_name, LOG_PID, facility)
+        openlog(config.syslog_name, LOG_PID, facility)
 
-    syslog(LOG_NOTICE, "{0}-{1} milter startup".format(NAME, VERSION))
+        syslog(LOG_NOTICE, "{0}-{1} milter startup".format(NAME, VERSION))
 
     Milter.factory = MailHeaderCheckMilter
 
