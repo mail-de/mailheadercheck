@@ -226,8 +226,8 @@ class MailHeaderCheckMilter(Milter.Base):
             log_output = "connection_id={0} qid={1} header_from=\"{2}\" header_subject=\"{3}\" header_date=\"{4}\" error_response_text=\"{5}\" result={6} actiontaken={7} dry_run={8}".format(
                 self.__connectionId,
                 self.getsymval('i'),
-                fromHeader,
-                subjectHeader,
+                fromHeader.replace('"', '\''),
+                subjectHeader.replace('"', '\''),
                 dateHeader,
                 failedCheck,
                 check_result,

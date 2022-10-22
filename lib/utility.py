@@ -62,7 +62,7 @@ class CheckUtils():
         except KeyError:
             return False
         except TypeError:    #  TypeError: "'NoneType' object is not subscriptable". Happens if in yaml you don't configure empty dict, but Nothing/None
-            pass
+            return False
 
         if str(action_value) == '1':   # We cast to str here, so users can use integers or strings in config.json
             return True
@@ -109,7 +109,7 @@ class CheckUtils():
         except KeyError:
             max_length = 5000
         except TypeError:    #  TypeError: "'NoneType' object is not subscriptable". Happens if in yaml you don't configure empty dict, but Nothing/None
-            pass
+            max_length = 5000
 
         if len(headers['subject']) > max_length:
             return True
