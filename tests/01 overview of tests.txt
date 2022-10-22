@@ -50,3 +50,8 @@ From:-Header with Umlauts not encoded  test-29
 0 References:-Headers                  test-68
 1 References:-Header                   test-69
 2 References:-Headers                  test-70
+
+0 Message-ID:-Header, but domain in exclude_fromheader_domains     test-81
+0 Message-ID:-Header, but domain in exclude_envelopefrom_domains   test-82
+0 Message-ID:-Header, but IP in exclude_ips                        test-83
+0 Message-ID:-Header, but check has "dry_run=1"                    test-84

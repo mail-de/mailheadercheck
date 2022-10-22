@@ -2,7 +2,7 @@
 
 *mailheadercheck* is a Postfix milter.
 
-It checks some headers for RFC validity.
+It checks some headers for RFC/BCP validity.
 
 Based on the milter "verifyemail" of Christian Rößner:
  https://gitlab.roessner-net.de/croessner/verifyemail/
@@ -14,7 +14,7 @@ The current implementation does the following checks:
 * Zero or more than one From:-header will result in a reject (reason: RFC violation)
 * More than one Subject:-header will result in a reject (reason: RFC violation)
 * Zero or more than one Date:-header will result in a reject (reason: RFC violation)
-* Zero or more than one e-mail address is listed in the From:-header. This is a
+* Not exactly one e-mail address is listed in the From:-header. This is a
   limitation and will probably change in the future by adding a header.
   Currently this results in a reject.
 * An empty or invalid Date:-header will result in a reject (reason: RFC violation)
@@ -23,7 +23,7 @@ The current implementation does the following checks:
 * More than one Reply-To:-header will result in a reject (reason: RFC violation)
 * More than one To:-header will result in a reject (reason: RFC violation)
 * More than one Cc:-header will result in a reject (reason: RFC violation)
-* More than one Message-ID:-header will result in a reject (reason: RFC violation)
+* Zero or more than one Message-ID:-header will result in a reject (reason: BCP/RFC violation)
 * More than one In-Reply-To:-header will result in a reject (reason: RFC violation)
 * More than one References:-header will result in a reject (reason: RFC violation)
 
@@ -34,45 +34,73 @@ mailheadercheck script into /usr/local/sbin/. Place the systemd unit file into
 /etc/systemd/system/ and create a user named "milter":
 
 ```
-sudo apt install libmilter-dev
-sudo apt install python3-pip
+sudo apt install python3-dev libmilter-dev python3-pip
 sudo pip3 install pymilter
-sudo cp mailheadercheck /usr/local/sbin/mailheadercheck
+sudo cp mailheadercheck /usr/local/sbin/
+sudo cp -r lib /usr/local/sbin/
 sudo chmod 755 /usr/local/sbin/mailheadercheck
 sudo cp mailheadercheck.service /etc/systemd/system/
+sudo mkdir /etc/mailheadercheck
+sudo cp config.yaml /etc/mailheadercheck
 sudo useradd milter -r -s /bin/false
 mailheadercheck --help
 ```
 
-### Configuration of the dry-run
+## Configuration file
 
-The milter has a dry-run mode which is activated by adding the parameter:
-```
---action accept
-```
-Dry-run is active in the provided mailheadercheck.service file. If you don't
-want the dry-run, remove this parameter from the mailheadercheck.service file.
+The YAML configuration file will be read from the following locations:
+- a path given by the --config parameter
+- /etc/mailheadercheck/config.yaml
+- ./config.yaml
 
-### Configuration of the socket
+If there is no config file found, the program exits.
 
-If you need a different port or IP address, use one of the following parameters:
+## Configuration options
 
-```
---socket inet:port@ipv4
---socket inet6:port@ipv6
---socket unix:/path/to/socket
-```
+**Please edit the default config.yaml according to your needs!**
 
-### Configuration of syslog
+### debug
 
-You can also change the syslog name and facility:
+debug=0 only outputs the "summary line" at the end with the results.
 
-```
---syslog_name mailheadercheck
---syslog_facility mail
-```
+debug=1 additionally outputs some log lines for each check that is run.
 
-### Start the systemd service
+### dry_run
+
+The milter has a dry-run mode which can be activated by globally setting "dry_run" to "1" in the config file.
+
+If there is no setting found in the config.yaml, dry-run is active by default.
+
+Additionally you can change the "dry_run" setting in each check individually. With this you can either set "dry_run"
+globally to 1, and then individual checks to 0. Or the other way around.
+
+### log_target
+
+You can choose from the following log targets:
+
+- syslog (also set "syslog_name" and "syslog_facility" then)
+- stdout (for Docker)
+- file (also set "log_filepath" then)
+
+### log_format
+
+This can be set to either "plain" or "json". This only affects the "summary line" when debug=0. It does not
+affect the DEBUG log lines which are written when debug=1.
+
+### log_privacy_mode
+
+Setting "log_privacy_mode" to 1 activates the privacy mode, which does not write the Subject:-header or
+From:-header to the logfile.
+
+### socket
+
+The "socket" setting can have one of the following formats:
+
+- inet:port@ipv4
+- inet6:port@ipv6
+- unix:/path/to/socket
+
+## Start the systemd service
 
 Reload the mailheadercheck.service file and start the systemd service:
 
@@ -82,10 +110,9 @@ sudo systemctl enable mailheadercheck
 sudo systemctl start mailheadercheck
 ```
 
-### Configure the milter in Postfix
+## Configure the milter in Postfix
 
-The milter will listen on port 30073 at 127.0.0.1 by default. Add the milter in Postfix
-to the smtpd_milters setting in the main.cf:
+Add the milter in Postfix to the smtpd_milters setting in the main.cf:
 
 ```
 smtpd_milters = ..., inet:127.0.0.1:30073, ...

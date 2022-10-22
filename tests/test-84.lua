@@ -1,8 +1,8 @@
 -- Echo that the test is starting
-mt.echo("*** begin test-62 - 1 From, 1 Subject, 1 Date, 0 Message-ID")
+mt.echo("*** begin test-84 - Missing Message-ID, but check has dry_run=1")
 
 -- start the filter
-mt.startfilter("./mailheadercheck", "--config", "tests/config.yaml")
+mt.startfilter("./mailheadercheck", "--config", "tests/test-84-config.yaml")
 mt.sleep(2)
 
 -- try to connect to it
@@ -22,17 +22,11 @@ if mt.getreply(conn) ~= SMFIR_CONTINUE then
 end
 
 -- send headers
-if mt.header(conn, "From", "\"Test\" <test@example.com>") ~= nil then
+if mt.header(conn, "From", "\"Test\" <test@example.net>") ~= nil then
      error "mt.header(From) failed"
 end
 if mt.getreply(conn) ~= SMFIR_CONTINUE then
      error "mt.header(From) unexpected reply"
-end
-if mt.header(conn, "Subject", "Subject line 1") ~= nil then
-     error "mt.header(Subject) failed"
-end
-if mt.getreply(conn) ~= SMFIR_CONTINUE then
-     error "mt.header(Subject) unexpected reply"
 end
 if mt.header(conn, "Date", "Wed, 23 Jun 2021 16:30:55 +0200") ~= nil then
      error "mt.header(Date) failed"
@@ -44,7 +38,7 @@ end
 if mt.eoh(conn) ~= nil then
      error "mt.eoh() failed"
 end
-if mt.getreply(conn) ~= SMFIR_REPLYCODE then
+if mt.getreply(conn) ~= SMFIR_ACCEPT then
      error "mt.eoh() unexpected reply"
 end
 

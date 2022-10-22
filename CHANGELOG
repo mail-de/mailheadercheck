@@ -1,3 +1,17 @@
+v2022.1: 2022-10-22
+    Complete rewrite of the code. Less copy&pasted code, more features :-)
+    - Configuration is done in config.yaml file
+    - Output can be in "plain" or "json" format
+    - Output can be written to "syslog", "stdout" or "file"
+    - There is a global "dry_run" setting, and dry-run can be changed for every single check
+    - Subject length can be configured
+    - Added "Missing Message-ID:-Header" check
+    - "log_privacy_mode": Subject + From will not be written to the summary line
+    - "exclude_fromheader_domains": For each check you can configure a list of From:-header domains which will result in an "accept" (like a whitelist)
+    - "exclude_envelopefrom_domains": For each check you can configure a list of Envelope-From domains which will result in an "accept" (like a whitelist)
+    - "exclude_ips": For each check you can configure a list of IP addresses or CIDR ranges which will result in an "accept" (like a whitelist)
+    - If the Subject is longer than 200 characters, it will be truncated (for example syslog has a length limit)
+
 v2021.3: 2021-07-12
     Added Sender:-Header check: Reject if this header exists more than once
     Added Reply-To:-Header check: Reject if this header exists more than once

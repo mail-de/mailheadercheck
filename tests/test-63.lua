@@ -2,7 +2,7 @@
 mt.echo("*** begin test-63 - 1 From, 1 Subject, 1 Date, 1 Message-ID")
 
 -- start the filter
-mt.startfilter("./mailheadercheck", "--socket", "inet:40000@127.0.0.1")
+mt.startfilter("./mailheadercheck", "--config", "tests/config.yaml")
 mt.sleep(2)
 
 -- try to connect to it

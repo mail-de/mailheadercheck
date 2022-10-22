@@ -1,12 +1,12 @@
 [Unit]
-Description=Milter to check some headers (From, Subject, Date)
+Description=Milter to check some headers (From, Subject, Date, Message-ID, ...)
 After=network.target
 
 [Service]
 Type=simple
 User=milter
 Group=milter
-ExecStart=/usr/local/sbin/mailheadercheck --action accept
+ExecStart=/usr/local/sbin/mailheadercheck
 
 [Install]
 WantedBy=multi-user.target

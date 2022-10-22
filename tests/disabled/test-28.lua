@@ -2,7 +2,7 @@
 mt.echo("*** begin test-28 - Subject:-Header too long")
 
 -- start the filter
-mt.startfilter("./mailheadercheck", "--socket", "inet:40000@127.0.0.1")
+mt.startfilter("./mailheadercheck", "--config", "tests/config.yaml")
 mt.sleep(2)
 
 -- try to connect to it

@@ -1,0 +1,49 @@
+debug: 1
+# stdout, file or syslog
+log_target: stdout
+# plain or json
+log_format: plain
+log_privacy_mode: 0
+log_filepath: mailheadercheck.log
+syslog_name: mailheadercheck
+syslog_facility: mail
+
+# inet:port@ipv4
+# inet6:port@ipv6
+# unix:/path/to/socket
+socket: inet:30073@127.0.0.1
+
+dry_run: 1
+
+checks:
+    missing_from_header:
+        dry_run: 0
+        exclude_fromheader_domains:
+            - example.org
+            - example.net
+    multiple_from_headers:
+        dry_run: 1
+    not_exactly_one_address_in_from_header: {}
+    multiple_subject_headers: {}
+    long_subject_header:
+        max_length: 5000
+    missing_date_header:
+        dry_run: 1
+    multiple_date_headers: {}
+    empty_date_header: {}
+    invalid_date_header: {}
+    multiple_sender_headers: {}
+    multiple_replyto_headers: {}
+    multiple_to_headers: {}
+    multiple_cc_headers: {}
+    missing_messageid_header:
+        exclude_fromheader_domains:
+            - domain_sending_no_msgid.example.com
+        exclude_envelopefrom_domains:
+            - domain_sending_no_msgid.example.com
+        exclude_ips:
+            - 127.0.0.1
+            - 12.34.56.0/24
+    multiple_messageid_headers: {}
+    multiple_inreplyto_headers: {}
+    multiple_references_headers: {}

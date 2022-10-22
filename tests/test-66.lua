@@ -2,7 +2,7 @@
 mt.echo("*** begin test-66 - 1 From, 1 Subject, 1 Date, 1 In-Reply-To")
 
 -- start the filter
-mt.startfilter("./mailheadercheck", "--socket", "inet:40000@127.0.0.1")
+mt.startfilter("./mailheadercheck", "--config", "tests/config.yaml")
 mt.sleep(2)
 
 -- try to connect to it
@@ -45,6 +45,12 @@ if mt.header(conn, "In-Reply-To", "<1234@local.machine.example>") ~= nil then
 end
 if mt.getreply(conn) ~= SMFIR_CONTINUE then
      error "mt.header(In-Reply-To) unexpected reply"
+end
+if mt.header(conn, "Message-ID", "<1234@local.machine.example>") ~= nil then
+     error "mt.header(Message-ID) failed"
+end
+if mt.getreply(conn) ~= SMFIR_CONTINUE then
+     error "mt.header(Message-ID) unexpected reply"
 end
 -- send EOH
 if mt.eoh(conn) ~= nil then

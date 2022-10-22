@@ -2,7 +2,7 @@
 mt.echo("*** begin test-03 - 2 From, 0 Subject, 0 Date (dry run)")
 
 -- start the filter
-mt.startfilter("./mailheadercheck", "--action", "accept", "--socket", "inet:40000@127.0.0.1")
+mt.startfilter("./mailheadercheck", "--config", "tests/config-dry.yaml")
 mt.sleep(2)
 
 -- try to connect to it
@@ -33,6 +33,12 @@ if mt.header(conn, "From", "\"Test2\" <test2@elsewhere.test>") ~= nil then
 end
 if mt.getreply(conn) ~= SMFIR_CONTINUE then
      error "mt.header(From) unexpected reply"
+end
+if mt.header(conn, "Message-ID", "<1234@local.machine.example>") ~= nil then
+     error "mt.header(Message-ID) failed"
+end
+if mt.getreply(conn) ~= SMFIR_CONTINUE then
+     error "mt.header(Message-ID) unexpected reply"
 end
 -- send EOH
 if mt.eoh(conn) ~= nil then

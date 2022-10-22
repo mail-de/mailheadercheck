@@ -1,0 +1,30 @@
+debug: 1
+log_target: file
+log_format: plain
+log_privacy_mode: 0
+log_filepath: /dev/null
+syslog_name: mailheadercheck
+syslog_facility: mail
+
+socket: inet:40000@localhost
+
+dry_run: 0
+
+checks:
+    missing_from_header: {}
+    multiple_from_headers: {}
+    not_exactly_one_address_in_from_header: {}
+    multiple_subject_headers: {}
+    long_subject_header: {}
+    missing_date_header: {}
+    multiple_date_headers: {}
+    empty_date_header: {}
+    invalid_date_header: {}
+    multiple_sender_headers: {}
+    multiple_replyto_headers: {}
+    multiple_to_headers: {}
+    multiple_cc_headers: {}
+    missing_messageid_header: {}
+    multiple_messageid_headers: {}
+    multiple_inreplyto_headers: {}
+    multiple_references_headers: {}
