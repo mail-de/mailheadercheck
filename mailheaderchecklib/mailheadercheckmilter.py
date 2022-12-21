@@ -1,8 +1,11 @@
-import Milter
 import json
 import random
 import string
-from lib.utility import CheckRunner, CheckUtils, Cfg
+
+import Milter
+
+from mailheaderchecklib.utility import CheckRunner, CheckUtils, Cfg
+
 
 # noinspection PyIncorrectDocstring,PyUnresolvedReferences
 class MailHeaderCheckMilter(Milter.Base):

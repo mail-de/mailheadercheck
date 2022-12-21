@@ -1,9 +1,11 @@
-from email.utils import parsedate, getaddresses, parseaddr
 import logging
 import logging.handlers
 import ipaddress
 import sys
 import yaml
+
+from email.utils import parsedate, getaddresses, parseaddr
+
 
 class CheckUtils():
     def domain_found_in_exclude_list(config, headers, envelopeFrom, checkName):
@@ -121,11 +123,14 @@ class CheckUtils():
         else:
             return 0
 
+
 class CheckRunner():
     def __init__(self, checkFunction):
         self.checkFunction = checkFunction
+
     def isValid(self, headers, headerCounter, config):
        return self.checkFunction(headers, headerCounter, config)
+
 
 class Logger():
     def getSyslogLogger(config):
@@ -158,6 +163,7 @@ class Logger():
             format = '%(name)s[%(process)d]: %(message)s'
         logging.basicConfig(format=format, level=level)
         return logging
+
 
 # noinspection PyUnresolvedReferences
 class Cfg(object):
