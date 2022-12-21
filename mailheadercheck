@@ -2,12 +2,15 @@
 
 import argparse
 import sys
+
 import Milter
-from lib.utility import Logger, Cfg
-from lib.mailheadercheckmilter import MailHeaderCheckMilter
+
+from mailheaderchecklib.utility import Logger, Cfg
+from mailheaderchecklib.mailheadercheckmilter import MailHeaderCheckMilter
+
 
 NAME = "mailheadercheck"
-VERSION = "2022.1"
+VERSION = "2022.2"
 
 try:
     # noinspection PyUnresolvedReferences
@@ -21,7 +24,6 @@ __author__ = "see AUTHORS file"
 __copyright__ = "Copyright (C) by AUTHORS"
 
 
-# noinspection PyProtectedMember,PyUnresolvedReferences
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(epilog=NAME)
 
