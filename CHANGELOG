@@ -1,3 +1,6 @@
+v2023.1: 2023-01-20
+    Added "Empty From:-Header" check, to better distinguish between empty From:-Header and "Not exactly one address in From:-Header"
+
 v2022.1: 2022-10-22
     Complete rewrite of the code. Less copy&pasted code, more features :-)
     - Configuration is done in config.yaml file

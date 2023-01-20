@@ -23,6 +23,7 @@ checks:
             - example.net
     multiple_from_headers:
         dry_run: 1
+    empty_from_header: {}
     not_exactly_one_address_in_from_header: {}
     multiple_subject_headers: {}
     long_subject_header:

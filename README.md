@@ -11,19 +11,24 @@ Based on the milter "verifyemail" of Christian Rößner:
 
 The current implementation does the following checks:
 
-* Zero or more than one From:-header will result in a reject (reason: RFC violation)
-* More than one Subject:-header will result in a reject (reason: RFC violation)
-* Zero or more than one Date:-header will result in a reject (reason: RFC violation)
+* No From:-header will result in a reject (reason: RFC violation)
+* More than one From:-header will result in a reject (reason: RFC violation)
+* An empty From:-header will result in a reject (reason: RFC violation)
 * Not exactly one e-mail address is listed in the From:-header. This is a
-  limitation and will probably change in the future by adding a header.
-  Currently this results in a reject.
-* An empty or invalid Date:-header will result in a reject (reason: RFC violation)
+    limitation and will probably change in the future by adding a header.
+    Currently this results in a reject.
+* More than one Subject:-header will result in a reject (reason: RFC violation)
 * A Subject:-header which is too long will result in a reject
+* No Date:-header will result in a reject (reason: RFC violation)
+* More than one Date:-header will result in a reject (reason: RFC violation)
+* An empty Date:-header will result in a reject (reason: RFC violation)
+* An invalid Date:-header will result in a reject (reason: RFC violation)
 * More than one Sender:-header will result in a reject (reason: RFC violation)
 * More than one Reply-To:-header will result in a reject (reason: RFC violation)
 * More than one To:-header will result in a reject (reason: RFC violation)
 * More than one Cc:-header will result in a reject (reason: RFC violation)
-* Zero or more than one Message-ID:-header will result in a reject (reason: BCP/RFC violation)
+* No Message-ID:-header will result in a reject (reason: BCP violation)
+* More than one Message-ID:-header will result in a reject (reason: RFC violation)
 * More than one In-Reply-To:-header will result in a reject (reason: RFC violation)
 * More than one References:-header will result in a reject (reason: RFC violation)
 

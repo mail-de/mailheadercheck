@@ -19,9 +19,13 @@ class MailHeaderCheckMilter(Milter.Base):
             'niceName': "Multiple From:-Headers",
             'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'from') > 1)
         },
+        'empty_from_header': {
+            'niceName': "Empty From:-Header",
+            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'from') == 1 and len(headers['from'].strip()) == 0)
+        },
         'not_exactly_one_address_in_from_header': {
             'niceName': "Not exactly one address in From:-Header",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'from') == 1 and CheckUtils.not_exactly_one_address_in_from_header(config, headers))
+            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'from') == 1 and len(headers['from'].strip()) > 0 and CheckUtils.not_exactly_one_address_in_from_header(config, headers))
         },
         'multiple_subject_headers': {
             'niceName': "Multiple Subject:-Headers",
@@ -41,7 +45,7 @@ class MailHeaderCheckMilter(Milter.Base):
         },
         'empty_date_header': {
             'niceName': "Empty Date:-Header",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'date') == 1 and headers['date'] == '')
+            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'date') == 1 and len(headers['date'].strip()) == 0)
         },
         'invalid_date_header': {
             'niceName': "Invalid Date:-Header",
