@@ -105,6 +105,11 @@ The "socket" setting can have one of the following formats:
 - inet6:port@ipv6
 - unix:/path/to/socket
 
+### add_result_header
+
+Setting "add_result_header" to 1 will add a header to the email with the name "X-MailHeaderCheck". It
+contains a JSON string with the "qid", "error_response_text", "result", "actiontaken" and "dry_run".
+
 ## Start the systemd service
 
 Reload the mailheadercheck.service file and start the systemd service:
@@ -127,5 +132,14 @@ smtpd_milters = ..., inet:127.0.0.1:30073, ...
 
 If you have installed *miltertest* from the OpenDKIM project, you can run the
 tests from the tests/ folder by simply calling the testing.sh script on a shell.
+
+```
+sudo apt install -V opendkim-tools
+chmod 700 mailheadercheck
+chmod 700 testing.sh
+./testing.sh
+# or run a single test:
+miltertest -s tests/test-01.lua
+```
 
 Enjoy

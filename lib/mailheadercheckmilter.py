@@ -148,8 +148,8 @@ class MailHeaderCheckMilter(Milter.Base):
 
         return Milter.CONTINUE
 
-    def eoh(self):
-        """ end of header. Gets called after all headers have been processed """
+    def eom(self):
+        """ end of message. Gets called after end of the message body """
 
         check_result = 'accept'
         actiontaken = 'accept'
@@ -239,6 +239,18 @@ class MailHeaderCheckMilter(Milter.Base):
                 'yes' if self.__dry_run_active else 'no'
             )
         self.__logging.info(log_output)
+
+
+        if 'add_result_header' in self.__config and self.__config['add_result_header'] == 1:
+            header_output = json.dumps({
+                'connection_id': self.__connectionId,
+                'qid': self.getsymval('i'),
+                'error_response_text': failedCheck,
+                'result': check_result,
+                'actiontaken': actiontaken,
+                'dry_run': 'yes' if self.__dry_run_active else 'no'
+            })
+            self.addheader('X-MailHeaderCheck', header_output)
 
         return Milter.ACCEPT if actiontaken == 'accept' else Milter.REJECT
 

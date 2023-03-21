@@ -1,3 +1,6 @@
+v2023.2: 2023-03-21
+    Added config setting "add_result_header" to add an "X-MailHeaderCheck" header to the email
+
 v2023.1: 2023-01-20
     Added "Empty From:-Header" check, to better distinguish between empty From:-Header and "Not exactly one address in From:-Header"
 

@@ -7,6 +7,8 @@ log_privacy_mode: 0
 log_filepath: mailheadercheck.log
 syslog_name: mailheadercheck
 syslog_facility: mail
+# add the header "X-MailHeaderCheck" with the results as JSON
+add_result_header: 0
 
 # inet:port@ipv4
 # inet6:port@ipv6

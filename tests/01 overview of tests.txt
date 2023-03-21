@@ -55,3 +55,4 @@ From:-Header with Umlauts not encoded  test-29
 0 Message-ID:-Header, but domain in exclude_envelopefrom_domains   test-82
 0 Message-ID:-Header, but IP in exclude_ips                        test-83
 0 Message-ID:-Header, but check has "dry_run=1"                    test-84
+Check if 'X-MailHeaderCheck' header is added                       test-85

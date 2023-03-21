@@ -40,12 +40,12 @@ end
 if mt.getreply(conn) ~= SMFIR_CONTINUE then
      error "mt.header(Message-ID) unexpected reply"
 end
--- send EOH
-if mt.eoh(conn) ~= nil then
-     error "mt.eoh() failed"
+-- send EOM
+if mt.eom(conn) ~= nil then
+     error "mt.eom() failed"
 end
 if mt.getreply(conn) ~= SMFIR_REPLYCODE then
-     error "mt.eoh() unexpected reply"
+     error "mt.eom() unexpected reply"
 end
 
 -- wrap it up!

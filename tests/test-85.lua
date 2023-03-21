@@ -1,8 +1,8 @@
 -- Echo that the test is starting
-mt.echo("*** begin test-07 - 0 From, 0 Subject, 2 Date")
+mt.echo("*** begin test-85 - Is 'X-MailHeaderCheck' header added if config has 'add_result_header: 1'")
 
 -- start the filter
-mt.startfilter("./mailheadercheck", "--config", "tests/config.yaml")
+mt.startfilter("./mailheadercheck", "--config", "tests/test-85-config.yaml")
 mt.sleep(2)
 
 -- try to connect to it
@@ -22,29 +22,28 @@ if mt.getreply(conn) ~= SMFIR_CONTINUE then
 end
 
 -- send headers
+if mt.header(conn, "From", "\"Test\" <test@example.net>") ~= nil then
+     error "mt.header(From) failed"
+end
+if mt.getreply(conn) ~= SMFIR_CONTINUE then
+     error "mt.header(From) unexpected reply"
+end
 if mt.header(conn, "Date", "Wed, 23 Jun 2021 16:30:55 +0200") ~= nil then
      error "mt.header(Date) failed"
 end
 if mt.getreply(conn) ~= SMFIR_CONTINUE then
      error "mt.header(Date) unexpected reply"
 end
-if mt.header(conn, "Date", "Wed, 24 Jun 2021 11:22:55 +0200") ~= nil then
-     error "mt.header(Date) failed"
-end
-if mt.getreply(conn) ~= SMFIR_CONTINUE then
-     error "mt.header(Date) unexpected reply"
-end
-if mt.header(conn, "Message-ID", "<1234@local.machine.example>") ~= nil then
-     error "mt.header(Message-ID) failed"
-end
-if mt.getreply(conn) ~= SMFIR_CONTINUE then
-     error "mt.header(Message-ID) unexpected reply"
-end
 -- send EOM
 if mt.eom(conn) ~= nil then
      error "mt.eom() failed"
 end
-if mt.getreply(conn) ~= SMFIR_REPLYCODE then
+-- verify that the "X-MailHeaderCheck" header field has been added
+if not mt.eom_check(conn, MT_HDRADD, "X-MailHeaderCheck") then
+     error "header X-MailHeaderCheck NOT added"
+end
+
+if mt.getreply(conn) ~= SMFIR_ACCEPT then
      error "mt.eom() unexpected reply"
 end
 
