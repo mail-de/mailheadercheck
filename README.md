@@ -47,7 +47,6 @@ sudo chmod 755 /usr/local/sbin/mailheadercheck
 sudo cp mailheadercheck.service /etc/systemd/system/
 sudo mkdir /etc/mailheadercheck
 sudo cp config.yaml /etc/mailheadercheck
-sudo useradd milter -r -s /bin/false
 mailheadercheck --help
 ```
 
