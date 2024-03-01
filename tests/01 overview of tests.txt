@@ -56,3 +56,7 @@ From:-Header with Umlauts not encoded  test-29
 0 Message-ID:-Header, but IP in exclude_ips                        test-83
 0 Message-ID:-Header, but check has "dry_run=1"                    test-84
 Check if 'X-MailHeaderCheck' header is added                       test-85
+
+0 Message-ID:-Header, but domain in exclude_fromheader_domains (case-insensitivity-test)     test-91
+0 Message-ID:-Header, but domain in exclude_envelopefrom_domains (case-insensitivity-test)   test-92
+0 Message-ID:-Header, but domain in exclude_envelopefrom_domains (MAIL FROM has "<>" chars)  test-93

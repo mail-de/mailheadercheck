@@ -7,7 +7,7 @@ from lib.utility import Logger, Cfg
 from lib.mailheadercheckmilter import MailHeaderCheckMilter
 
 NAME = "mailheadercheck"
-VERSION = "2023.2"
+VERSION = "2024.1"
 
 try:
     # noinspection PyUnresolvedReferences

@@ -2,7 +2,7 @@ import Milter
 import json
 import random
 import string
-from lib.utility import CheckRunner, CheckUtils, Cfg
+from lib.utility import CheckRunner, CheckUtils, Logger, Cfg
 
 # noinspection PyIncorrectDocstring,PyUnresolvedReferences
 class MailHeaderCheckMilter(Milter.Base):
@@ -191,7 +191,7 @@ class MailHeaderCheckMilter(Milter.Base):
             fromHeader = 'missing-from-header'
         elif self.__headerCounter['from'] > 1:
             fromHeader = 'multiple-from-headers'
-        elif self.__config['log_privacy_mode'] == 1:
+        elif Logger.getLogPrivacyMode(self.__config):
             fromHeader = 'privacy-mode-active'
         else:
             fromHeader = self.__headers['from'].replace('\n', ' ').replace('\r', '')
@@ -200,7 +200,7 @@ class MailHeaderCheckMilter(Milter.Base):
             subjectHeader = 'missing-subject-header'
         elif self.__headerCounter['subject'] > 1:
             subjectHeader = 'multiple-subject-headers'
-        elif self.__config['log_privacy_mode'] == 1:
+        elif Logger.getLogPrivacyMode(self.__config):
             subjectHeader = 'privacy-mode-active'
         else:
             subjectHeader = (self.__headers['subject'][:200] + '...') if len(self.__headers['subject']) > 200 else self.__headers['subject']

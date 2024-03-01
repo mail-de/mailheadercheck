@@ -66,7 +66,7 @@ If there is no config file found, the program exits.
 
 ### debug
 
-debug=0 only outputs the "summary line" at the end with the results.
+debug=0 (default) only outputs the "summary line" at the end with the results.
 
 debug=1 additionally outputs some log lines for each check that is run.
 
@@ -76,7 +76,7 @@ The milter has a dry-run mode which can be activated by globally setting "dry_ru
 
 If there is no setting found in the config.yaml, dry-run is active by default.
 
-Additionally you can change the "dry_run" setting in each check individually. With this you can either set "dry_run"
+Additionally, you can change the "dry_run" setting in each check individually. With this you can either set "dry_run"
 globally to 1, and then individual checks to 0. Or the other way around.
 
 ### log_target
@@ -94,8 +94,9 @@ affect the DEBUG log lines which are written when debug=1.
 
 ### log_privacy_mode
 
-Setting "log_privacy_mode" to 1 activates the privacy mode, which does not write the Subject:-header or
-From:-header to the logfile.
+log_privacy_mode=1 (default) activates the privacy mode, which does not write the Subject:-header or From:-header to the logfile.
+
+log_privacy_mode=0 deactivates the privacy mode.
 
 ### socket
 

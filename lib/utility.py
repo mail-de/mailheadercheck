@@ -10,8 +10,9 @@ class CheckUtils():
 
         """ check exclude_envelopefrom_domains """
         try:
-            exclude_envelopefrom_domains = config['checks'][checkName]['exclude_envelopefrom_domains']
-            domain = envelopeFrom[envelopeFrom.index('@') + 1 : ]
+            exclude_envelopefrom_domains = [domain.lower() for domain in config['checks'][checkName]['exclude_envelopefrom_domains']]
+            envelopeFrom = envelopeFrom.strip('<>')
+            domain = envelopeFrom[envelopeFrom.index('@') + 1 : ].lower()
             if domain in exclude_envelopefrom_domains:
                 return True
         except KeyError:
@@ -25,11 +26,11 @@ class CheckUtils():
         if 'from' not in headers:
             return False
         try:
-            exclude_fromheader_domains = config['checks'][checkName]['exclude_fromheader_domains']
+            exclude_fromheader_domains = [domain.lower() for domain in config['checks'][checkName]['exclude_fromheader_domains']]
             all_emails = getaddresses([headers['from']])
             for email_addr in all_emails:
                 name, emailaddress = parseaddr(email_addr)
-                domain = emailaddress[emailaddress.index('@') + 1 : ]
+                domain = emailaddress[emailaddress.index('@') + 1 : ].lower()
                 if domain in exclude_fromheader_domains:
                     return True
         except KeyError:
@@ -130,8 +131,7 @@ class CheckRunner():
 class Logger():
     def getSyslogLogger(config):
         log = logging.getLogger(config['syslog_name'])
-        level = logging.DEBUG if config['debug'] == 1 else logging.INFO
-        log.setLevel(level)
+        log.setLevel(Logger.getLogLevel(config))
         handler = logging.handlers.SysLogHandler(address = '/dev/log', facility = config['syslog_facility'])
         if config['log_format'] == 'json':
             formatter = logging.Formatter('%(message)s')
@@ -142,22 +142,34 @@ class Logger():
         return log
 
     def getFileLogger(config):
-        level = logging.DEBUG if config['debug'] == 1 else logging.INFO
         if config['log_format'] == 'json':
             format = '%(message)s'
         else:
             format = '%(name)s[%(process)d]: %(message)s'
-        logging.basicConfig(format=format, filename=config['log_filepath'], level=level)
+        logging.basicConfig(format=format, filename=config['log_filepath'], level=Logger.getLogLevel(config))
         return logging
 
     def getStdoutLogger(config):
-        level = logging.DEBUG if config['debug'] == 1 else logging.INFO
         if config['log_format'] == 'json':
             format = '%(message)s'
         else:
             format = '%(name)s[%(process)d]: %(message)s'
-        logging.basicConfig(format=format, level=level)
+        logging.basicConfig(format=format, level=Logger.getLogLevel(config))
         return logging
+
+    def getLogLevel(config):
+        try:
+            level = logging.DEBUG if config['debug'] == 1 else logging.INFO
+        except KeyError:
+            level = logging.INFO
+        return level
+
+    def getLogPrivacyMode(config):
+        try:
+            return config['log_privacy_mode'] == 1
+        except KeyError:
+            return True
+
 
 # noinspection PyUnresolvedReferences
 class Cfg(object):

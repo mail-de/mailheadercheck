@@ -1,6 +1,5 @@
 TODO
 
-- Add --action parameter "addheader"
 - mime-decode Subject:-Header and then check the length
 - Check age of the Date:-Header (emails from 1970 or from the distant future should be rejected)
 - If there are multiple addresses in the From:-Header, then there MUST be a Sender:-Header
