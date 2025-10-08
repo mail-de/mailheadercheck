@@ -44,6 +44,14 @@ checks:
             - domain_sending_no_msgid.example.com
         exclude_envelopefrom_domains:
             - domain_sending_no_msgid.example.com
+        exclude_fromheader_addresses:
+            - user@example.org
+            - alerts@domain.example
+        exclude_envelopefrom_addresses:
+            - bounce@example.org
+        exclude_sasl_usernames:
+            - alice
+            - bob
         exclude_ips:
             - 127.0.0.1
             - 12.34.56.0/24

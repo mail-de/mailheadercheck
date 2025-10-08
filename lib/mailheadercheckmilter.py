@@ -106,6 +106,7 @@ class MailHeaderCheckMilter(Milter.Base):
         self.__ipname = None
         self.__ip = None
         self.__port = None
+        self.__sasl_username = None
         self.initializeHeaderCounter()
 
         try:
@@ -134,6 +135,13 @@ class MailHeaderCheckMilter(Milter.Base):
 
         self.__headers = dict()
         self.__envelopeFrom = mailfrom
+        # try to capture SASL username if available
+        try:
+            self.__sasl_username = self.getsymval('auth_authen')
+            if not self.__sasl_username:
+                self.__sasl_username = self.getsymval('{auth_authen}')
+        except Exception:
+            self.__sasl_username = None
         self.initializeHeaderCounter()
 
         return Milter.CONTINUE
@@ -157,6 +165,21 @@ class MailHeaderCheckMilter(Milter.Base):
 
         for checkName, oneCheck in self.allChecks.items():
             self.__logging.debug(self.__connectionId+' Running check: ' + oneCheck['niceName'] + '('+checkName+')')
+
+            self.__logging.debug(self.__connectionId+' Check if the SASL username is on exclude_sasl_usernames list of check "'+checkName+'"')
+            if CheckUtils.sasl_found_in_exclude_list(self.__config, self.__sasl_username, checkName):
+                self.__logging.debug(self.__connectionId+' SASL username in exclude list found, skipping this check...')
+                continue
+
+            self.__logging.debug(self.__connectionId+' Check if the sender address is on exclude_envelopefrom_addresses list of check "'+checkName+'"')
+            if CheckUtils.envelopefrom_found_in_exclude_list(self.__config, self.__envelopeFrom, checkName):
+                self.__logging.debug(self.__connectionId+' Envelope-From in exclude list found, skipping this check...')
+                continue
+
+            self.__logging.debug(self.__connectionId+' Check if the From: header address is on exclude_fromheader_addresses list of check "'+checkName+'"')
+            if CheckUtils.fromheader_found_in_exclude_list(self.__config, self.__headers, checkName):
+                self.__logging.debug(self.__connectionId+' From header address in exclude list found, skipping this check...')
+                continue
 
             self.__logging.debug(self.__connectionId+' Check if the sender domain is on exclude domain list of check "'+checkName+'"')
             if CheckUtils.domain_found_in_exclude_list(self.__config, self.__headers, self.__envelopeFrom, checkName):

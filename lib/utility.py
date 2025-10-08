@@ -29,7 +29,8 @@ class CheckUtils():
             exclude_fromheader_domains = [domain.lower() for domain in config['checks'][checkName]['exclude_fromheader_domains']]
             all_emails = getaddresses([headers['from']])
             for email_addr in all_emails:
-                name, emailaddress = parseaddr(email_addr)
+                # getaddresses returns (name, email) tuples
+                name, emailaddress = email_addr
                 domain = emailaddress[emailaddress.index('@') + 1 : ].lower()
                 if domain in exclude_fromheader_domains:
                     return True
@@ -40,6 +41,49 @@ class CheckUtils():
         except ValueError:   # substring '@' not found
             pass
 
+        return False
+
+    def envelopefrom_found_in_exclude_list(config, envelopeFrom, checkName):
+        """ check exclude_envelopefrom_addresses (full addresses) """
+        try:
+            exclude_envelopefrom_addresses = [addr.lower() for addr in config['checks'][checkName]['exclude_envelopefrom_addresses']]
+            envelopeFromNorm = envelopeFrom.strip('<>').lower()
+            if envelopeFromNorm in exclude_envelopefrom_addresses:
+                return True
+        except KeyError:
+            pass
+        except TypeError:
+            pass
+        return False
+
+    def fromheader_found_in_exclude_list(config, headers, checkName):
+        """ check exclude_fromheader_addresses (full addresses from From: header) """
+        if 'from' not in headers:
+            return False
+        try:
+            exclude_fromheader_addresses = [addr.lower() for addr in config['checks'][checkName]['exclude_fromheader_addresses']]
+            all_emails = getaddresses([headers['from']])
+            for name, emailaddress in all_emails:
+                if emailaddress and emailaddress.lower() in exclude_fromheader_addresses:
+                    return True
+        except KeyError:
+            pass
+        except TypeError:
+            pass
+        return False
+
+    def sasl_found_in_exclude_list(config, sasl_username, checkName):
+        """ check exclude_sasl_usernames """
+        if not sasl_username:
+            return False
+        try:
+            exclude_sasl_usernames = [u.lower() for u in config['checks'][checkName]['exclude_sasl_usernames']]
+            if sasl_username.lower() in exclude_sasl_usernames:
+                return True
+        except KeyError:
+            pass
+        except TypeError:
+            pass
         return False
 
     def ip_found_in_exclude_ip_list(config, ip, checkName):

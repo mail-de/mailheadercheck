@@ -1,3 +1,9 @@
+v2025.1: 2025-10-08
+    Added new exclusion options to support submission servers and full-address matching:
+        - exclude_sasl_usernames (authenticated username)
+        - exclude_fromheader_addresses (full From: addresses)
+        - exclude_envelopefrom_addresses (full MAIL FROM addresses)
+
 v2024.1: 2024-03-01
     Added defaults for config settings "debug" and "log_privacy_mode", so they can be omitted in the config file (see issue #5)
     Fixed bug: When checking exclude_envelopefrom_domains "<" and ">" were not removed from the Envelope-From (see issue #7)

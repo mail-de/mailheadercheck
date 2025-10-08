@@ -110,6 +110,39 @@ The "socket" setting can have one of the following formats:
 Setting "add_result_header" to 1 will add a header to the email with the name "X-MailHeaderCheck". It
 contains a JSON string with the "qid", "error_response_text", "result", "actiontaken" and "dry_run".
 
+### Exclusion options (per check)
+
+Each check can be configured with exclusion lists to skip enforcement for specific senders.
+All comparisons are case-insensitive. Configure these under `checks.<check_name>`:
+
+- `exclude_fromheader_domains`: list of domains to skip when a From: header address matches the domain.
+- `exclude_fromheader_addresses`: list of full email addresses from the From: header to skip.
+- `exclude_envelopefrom_domains`: list of domains to skip when the SMTP MAIL FROM address matches the domain.
+- `exclude_envelopefrom_addresses`: list of full SMTP MAIL FROM addresses to skip (angle brackets are ignored).
+- `exclude_ips`: list of IPs or CIDR networks to skip, matching the client IP.
+- `exclude_sasl_usernames`: list of authenticated SASL usernames to skip (useful on submission servers).
+
+Example:
+
+```yaml
+checks:
+  missing_messageid_header:
+    exclude_fromheader_domains:
+      - domain_sending_no_msgid.example.com
+    exclude_envelopefrom_domains:
+      - domain_sending_no_msgid.example.com
+    exclude_ips:
+      - 127.0.0.1
+      - 12.34.56.0/24
+    exclude_sasl_usernames:
+      - alice
+      - bob
+    exclude_fromheader_addresses:
+      - user@example.org
+    exclude_envelopefrom_addresses:
+      - bounce@example.org
+```
+
 ## Start the systemd service
 
 Reload the mailheadercheck.service file and start the systemd service:
