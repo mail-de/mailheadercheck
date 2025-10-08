@@ -3,11 +3,11 @@
 import argparse
 import sys
 import Milter
-from lib.utility import Logger, Cfg
-from lib.mailheadercheckmilter import MailHeaderCheckMilter
+from mailheaderchecklib.utility import Logger, Cfg
+from mailheaderchecklib.mailheadercheckmilter import MailHeaderCheckMilter
 
 NAME = "mailheadercheck"
-VERSION = "2024.1"
+VERSION = "2025.1"
 
 try:
     # noinspection PyUnresolvedReferences
