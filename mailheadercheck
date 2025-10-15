@@ -7,7 +7,7 @@ from mailheaderchecklib.utility import Logger, Cfg
 from mailheaderchecklib.mailheadercheckmilter import MailHeaderCheckMilter
 
 NAME = "mailheadercheck"
-VERSION = "2025.1"
+VERSION = "2025.2"
 
 try:
     # noinspection PyUnresolvedReferences
@@ -29,6 +29,7 @@ if __name__ == "__main__":
                         type=str,
                         default="",
                         help="Path to config file. If not provided, the following order will be tested: /etc/mailheadercheck/config.yaml, ./config.yaml")
+    parser.add_argument("--version", "-V", action="version", version=f"{NAME} {VERSION}")
     params = parser.parse_args()
 
     config = Cfg.find_and_parse_config_file(params.config)
@@ -39,6 +40,9 @@ if __name__ == "__main__":
     elif config['log_target'] == 'file':
         logging = Logger.getFileLogger(config)
     elif config['log_target'] == 'stdout':
+        logging = Logger.getStdoutLogger(config)
+    else:
+        # Fallback to stdout if log_target is misconfigured
         logging = Logger.getStdoutLogger(config)
 
     logging.info("{0}-{1} milter startup".format(NAME, VERSION))

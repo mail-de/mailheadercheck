@@ -36,7 +36,7 @@ The current implementation does the following checks:
 
 Install libmilter and the python bindings (often known as pymilter). Place the
 mailheadercheck script into /usr/local/sbin/. Place the systemd unit file into
-/etc/systemd/system/ and create a user named "milter":
+/etc/systemd/system/:
 
 ```
 sudo apt install python3-dev libmilter-dev python3-pip python3-yaml
