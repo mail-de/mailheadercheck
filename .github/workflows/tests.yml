@@ -1,0 +1,44 @@
+name: Tests
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  run_tests:
+    name: Run testing.sh (miltertest)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install system dependencies (miltertest and build tools)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            opendkim-tools \
+            libmilter-dev \
+            gcc \
+            libc6-dev
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install PyYAML pymilter setproctitle
+
+      - name: Make scripts executable
+        run: |
+          chmod +x mailheadercheck || true
+          chmod +x testing.sh
+
+      - name: Run tests
+        env:
+          PYTHONUNBUFFERED: "1"
+        run: |
+          ./testing.sh

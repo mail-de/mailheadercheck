@@ -44,9 +44,9 @@ sudo pip3 install pymilter
 sudo cp mailheadercheck /usr/local/sbin/
 sudo cp -r mailheaderchecklib /usr/local/sbin/
 sudo chmod 755 /usr/local/sbin/mailheadercheck
-sudo cp mailheadercheck.service /etc/systemd/system/
+sudo cp contrib/systemd/mailheadercheck.service /etc/systemd/system/
 sudo mkdir /etc/mailheadercheck
-sudo cp config.yaml /etc/mailheadercheck
+sudo cp examples/config.yaml /etc/mailheadercheck
 mailheadercheck --help
 ```
 
@@ -61,7 +61,7 @@ If there is no config file found, the program exits.
 
 ## Configuration options
 
-**Please edit the default config.yaml according to your needs!**
+**Please edit your config.yaml according to your needs (see examples/config.yaml).**
 
 ### debug
 
