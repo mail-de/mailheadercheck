@@ -49,6 +49,11 @@ for cfg in tests/config_syntax/*.yaml; do
 done
 
 # 2) Run milter functional tests
+# Require miltertest to be present
+if ! command -v miltertest >/dev/null 2>&1; then
+    echo "ERROR: 'miltertest' command not found; please install the 'miltertest' package via apt (or install 'opendkim-tools' because 'miltertest' was a part of that package in the past)."
+    exit 1
+fi
 for testcase in tests/test-*.lua; do
     total=$((total+1))
     echo -n "Running $testcase ... "

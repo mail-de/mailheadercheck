@@ -177,11 +177,11 @@ smtpd_milters = ..., inet:127.0.0.1:30073, ...
 
 ## Testing
 
-If you have installed *miltertest* from the OpenDKIM project, you can run the
-tests from the tests/ folder by simply calling the testing.sh script on a shell.
+If you have installed *miltertest*, you can run the tests from the 
+tests/ folder by simply calling the testing.sh script on a shell.
 
 ```
-sudo apt install -V opendkim-tools
+sudo apt install -V miltertest   # if it doesn't exist, maybe it's part of opendkim-tools
 chmod 700 mailheadercheck
 chmod 700 testing.sh
 ./testing.sh
