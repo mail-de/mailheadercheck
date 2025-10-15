@@ -5,7 +5,7 @@
 It checks some headers for RFC/BCP validity.
 
 Based on the milter "verifyemail" of Christian Rößner:
- https://gitlab.roessner-net.de/croessner/verifyemail/
+<https://gitlab.roessner-net.de/croessner/verifyemail/>
 
 ## Features
 
@@ -53,9 +53,10 @@ mailheadercheck --help
 ## Configuration file
 
 The YAML configuration file will be read from the following locations:
-- a path given by the --config parameter
-- /etc/mailheadercheck/config.yaml
-- ./config.yaml
+
+* a path given by the --config parameter
+* /etc/mailheadercheck/config.yaml
+* ./config.yaml
 
 If there is no config file found, the program exits.
 
@@ -71,29 +72,33 @@ debug=1 additionally outputs some log lines for each check that is run.
 
 ### dry_run
 
-The milter has a dry-run mode which can be activated by globally setting "dry_run" to "1" in the config file.
+The milter has a dry-run mode which can be activated by
+globally setting "dry_run" to "1" in the config file.
 
 If there is no setting found in the config.yaml, dry-run is active by default.
 
-Additionally, you can change the "dry_run" setting in each check individually. With this you can either set "dry_run"
-globally to 1, and then individual checks to 0. Or the other way around.
+Additionally, you can change the "dry_run" setting in each check
+individually. With this you can either set "dry_run" globally to 1, and
+then individual checks to 0. Or the other way around.
 
 ### log_target
 
 You can choose from the following log targets:
 
-- syslog (also set "syslog_name" and "syslog_facility" then)
-- stdout (for Docker)
-- file (also set "log_filepath" then)
+* syslog (also set "syslog_name" and "syslog_facility" then)
+* stdout (for Docker)
+* file (also set "log_filepath" then)
 
 ### log_format
 
-This can be set to either "plain" or "json". This only affects the "summary line" when debug=0. It does not
-affect the DEBUG log lines which are written when debug=1.
+This can be set to either "plain" or "json". This only affects the
+"summary line" when debug=0. It does not affect the DEBUG log lines
+which are written when debug=1.
 
 ### log_privacy_mode
 
-log_privacy_mode=1 (default) activates the privacy mode, which does not write the Subject:-header or From:-header to the logfile.
+log_privacy_mode=1 (default) activates the privacy mode, which does not
+write the Subject:-header or From:-header to the logfile.
 
 log_privacy_mode=0 deactivates the privacy mode.
 
@@ -101,26 +106,35 @@ log_privacy_mode=0 deactivates the privacy mode.
 
 The "socket" setting can have one of the following formats:
 
-- inet:port@ipv4
-- inet6:port@ipv6
-- unix:/path/to/socket
+* inet:port@ipv4
+* inet6:port@ipv6
+* unix:/path/to/socket
 
 ### add_result_header
 
-Setting "add_result_header" to 1 will add a header to the email with the name "X-MailHeaderCheck". It
-contains a JSON string with the "qid", "error_response_text", "result", "actiontaken" and "dry_run".
+Setting "add_result_header" to 1 will add a header to the email with
+the name "X-MailHeaderCheck". It contains a JSON string with the "qid",
+"error_response_text", "result", "actiontaken" and "dry_run".
 
 ### Exclusion options (per check)
 
-Each check can be configured with exclusion lists to skip enforcement for specific senders.
-All comparisons are case-insensitive. Configure these under `checks.<check_name>`:
+Each check can be configured with exclusion lists to skip enforcement for
+specific senders.
+All comparisons are case-insensitive. Configure these under
+`checks.<check_name>`:
 
-- `exclude_fromheader_domains`: list of domains to skip when a From: header address matches the domain.
-- `exclude_fromheader_addresses`: list of full email addresses from the From: header to skip.
-- `exclude_envelopefrom_domains`: list of domains to skip when the SMTP MAIL FROM address matches the domain.
-- `exclude_envelopefrom_addresses`: list of full SMTP MAIL FROM addresses to skip (angle brackets are ignored).
-- `exclude_ips`: list of IPs or CIDR networks to skip, matching the client IP.
-- `exclude_sasl_usernames`: list of authenticated SASL usernames to skip (useful on submission servers).
+* `exclude_fromheader_domains`: list of domains to skip when a From:
+  header address matches the domain.
+* `exclude_fromheader_addresses`: list of full email addresses from the
+  From: header to skip.
+* `exclude_envelopefrom_domains`: list of domains to skip when the SMTP
+  MAIL FROM address matches the domain.
+* `exclude_envelopefrom_addresses`: list of full SMTP MAIL FROM addresses
+  to skip (angle brackets are ignored).
+* `exclude_ips`: list of IPs or CIDR networks to skip, matching the
+  client IP.
+* `exclude_sasl_usernames`: list of authenticated SASL usernames to skip
+  (useful on submission servers).
 
 Example:
 
@@ -177,10 +191,10 @@ miltertest -s tests/test-01.lua
 
 Enjoy
 
-
 ## Run with Docker Compose
 
-This repository includes everything to run the milter via Docker. The Dockerfile and docker-compose.yml live at the project root.
+This repository includes everything to run the milter via Docker. The
+Dockerfile and docker-compose.yml live at the project root.
 
 Quickstart:
 
@@ -191,13 +205,14 @@ docker compose up -d --build
 ```
 
    This will:
-   - build a minimal Python image with the milter
-   - mount docker/config.yaml into the container at /config/config.yaml
-   - listen on TCP port 30073 inside the container and publish it to the host
+   * build a minimal Python image with the milter
+   * mount docker/config.yaml into the container at /config/config.yaml
+   * listen on TCP port 30073 inside the container and publish it to the host
 
 2) Configure Postfix to use the milter
 
-   Add to main.cf (replace 127.0.0.1 with the appropriate host/IP where the container runs if needed):
+   Add to main.cf (replace 127.0.0.1 with the appropriate host/IP where
+   the container runs if needed):
 
 ```conf
 smtpd_milters = ..., inet:127.0.0.1:30073, ...
@@ -205,7 +220,8 @@ smtpd_milters = ..., inet:127.0.0.1:30073, ...
 
 3) Logs
 
-   The default container config (docker/config.yaml) logs to stdout. You can view logs with:
+   The default container config (docker/config.yaml) logs to stdout. You
+   can view logs with:
 
 ```sh
 docker compose logs -f
@@ -217,10 +233,14 @@ docker compose logs -f
 
 Notes
 
-- Config file location: By default the container expects /config/config.yaml; docker-compose mounts docker/config.yaml there. Adjust to your environment as needed.
-- Socket type: For Docker, using a TCP socket is simplest. If you prefer a UNIX domain socket, mount a volume and set socket: unix:/path/to/socket in the config, then point Postfix to that path inside the same mount namespace.
-- Non-root: The container runs as a non-root user and exposes port 30073 (non-privileged).
-
+* Config file location: By default the container expects /config/config.yaml;
+  docker-compose mounts docker/config.yaml there. Adjust to your environment
+  as needed.
+* Socket type: For Docker, using a TCP socket is simplest. If you prefer a
+  UNIX domain socket, mount a volume and set socket: unix:/path/to/socket in
+  the config, then point Postfix to that path inside the same mount namespace.
+* Non-root: The container runs as a non-root user and exposes port 30073
+  (non-privileged).
 
 ### Validate configuration (optional)
 
