@@ -176,3 +176,56 @@ miltertest -s tests/test-01.lua
 ```
 
 Enjoy
+
+
+## Run with Docker Compose
+
+This repository includes everything to run the milter via Docker. The Dockerfile and docker-compose.yml live at the project root.
+
+Quickstart:
+
+1) Build and start
+
+```sh
+docker compose up -d --build
+```
+
+   This will:
+   - build a minimal Python image with the milter
+   - mount docker/config.yaml into the container at /config/config.yaml
+   - listen on TCP port 30073 inside the container and publish it to the host
+
+2) Configure Postfix to use the milter
+
+   Add to main.cf (replace 127.0.0.1 with the appropriate host/IP where the container runs if needed):
+
+```conf
+smtpd_milters = ..., inet:127.0.0.1:30073, ...
+```
+
+3) Logs
+
+   The default container config (docker/config.yaml) logs to stdout. You can view logs with:
+
+```sh
+docker compose logs -f
+```
+
+4) Healthcheck
+
+   The compose file includes a healthcheck that verifies the TCP listener.
+
+Notes
+
+- Config file location: By default the container expects /config/config.yaml; docker-compose mounts docker/config.yaml there. Adjust to your environment as needed.
+- Socket type: For Docker, using a TCP socket is simplest. If you prefer a UNIX domain socket, mount a volume and set socket: unix:/path/to/socket in the config, then point Postfix to that path inside the same mount namespace.
+- Non-root: The container runs as a non-root user and exposes port 30073 (non-privileged).
+
+
+### Validate configuration (optional)
+
+You can validate the configuration without starting the milter:
+
+```sh
+docker compose run --rm mailheadercheck --config /config/config.yaml --configcheck
+```

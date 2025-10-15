@@ -1,0 +1,25 @@
+services:
+  mailheadercheck:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mailheadercheck:local
+    container_name: mailheadercheck
+    restart: unless-stopped
+
+    # Mount a container-specific config. You can copy/adjust it.
+    volumes:
+      - ./docker/config.yaml:/config/config.yaml:ro
+
+    # Publish the milter TCP port to the host.
+    # Make sure the mounted config binds to 0.0.0.0 (see docker/config.yaml)
+    ports:
+      - "30073:30073"
+
+    # Healthcheck: verifies the TCP listener is up inside the container
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket,sys; s=socket.socket(); s.settimeout(1); s.connect(('127.0.0.1',30073)); s.close(); sys.exit(0)"]
+      interval: 10s
+      timeout: 2s
+      retries: 3
+      start_period: 5s
