@@ -177,7 +177,7 @@ smtpd_milters = ..., inet:127.0.0.1:30073, ...
 
 ## Testing
 
-If you have installed *miltertest*, you can run the tests from the 
+If you have installed *miltertest*, you can run the tests from the
 tests/ folder by simply calling the testing.sh script on a shell.
 
 ```
