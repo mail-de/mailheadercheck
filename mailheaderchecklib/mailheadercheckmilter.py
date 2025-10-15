@@ -241,6 +241,9 @@ class MailHeaderCheckMilter(Milter.Base):
             log_output = json.dumps({
                 'connection_id': self.__connectionId,
                 'qid': self.getsymval('i'),
+                'client_ip': self.__ip,
+                'sasl_username': self.__sasl_username,
+                'envelope_from': self.__envelopeFrom,
                 'header_from': fromHeader,
                 'header_subject': subjectHeader,
                 'header_date': dateHeader,
@@ -250,9 +253,12 @@ class MailHeaderCheckMilter(Milter.Base):
                 'dry_run': 'yes' if self.__dry_run_active else 'no'
             })
         else:
-            log_output = "connection_id={0} qid={1} header_from=\"{2}\" header_subject=\"{3}\" header_date=\"{4}\" error_response_text=\"{5}\" result={6} actiontaken={7} dry_run={8}".format(
+            log_output = "connection_id={0} qid={1} client_ip=\"{2}\" sasl_username=\"{3}\" envelope_from=\"{4}\" header_from=\"{5}\" header_subject=\"{6}\" header_date=\"{7}\" error_response_text=\"{8}\" result={9} actiontaken={10} dry_run={11}".format(
                 self.__connectionId,
                 self.getsymval('i'),
+                (self.__ip or '').replace('"', '\''),
+                (self.__sasl_username or '').replace('"', '\''),
+                (self.__envelopeFrom or '').replace('"', '\''),
                 fromHeader.replace('"', '\''),
                 subjectHeader.replace('"', '\''),
                 dateHeader,

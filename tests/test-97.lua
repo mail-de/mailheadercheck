@@ -13,7 +13,7 @@ end
 
 -- send envelope macros and sender data
 -- mt.helo() is called implicitly
-mt.macro(conn, SMFIC_MAIL, "i", "test-id-97")
+mt.macro(conn, SMFIC_CONNECT, "i", "test-id-97")
 if mt.mailfrom(conn, "bounce@example.org") ~= nil then
      error "mt.mailfrom() failed"
 end

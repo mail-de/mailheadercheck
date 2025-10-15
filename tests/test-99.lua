@@ -13,7 +13,7 @@ end
 
 -- send envelope macros and sender data
 -- mt.helo() is called implicitly
-mt.macro(conn, SMFIC_MAIL, "i", "test-id-99")
+mt.macro(conn, SMFIC_CONNECT, "i", "test-id-99")
 -- Provide SASL username via macros (both forms)
 mt.macro(conn, SMFIC_MAIL, "auth_authen", "charlie")
 mt.macro(conn, SMFIC_MAIL, "{auth_authen}", "charlie")

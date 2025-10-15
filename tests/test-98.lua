@@ -12,11 +12,10 @@ if conn == nil then
 end
 
 -- Provide SASL username via macro
-mt.macro(conn, SMFIC_CONNECT, "auth_authen", "alice")
+mt.macro(conn, SMFIC_CONNECT, "i", "test-id-98", "auth_authen", "alice")
 
 -- send envelope macros and sender data
 -- mt.helo() is called implicitly
-mt.macro(conn, SMFIC_MAIL, "i", "test-id-98")
 
 if mt.mailfrom(conn, "sender@example.com") ~= nil then
      error "mt.mailfrom() failed"
