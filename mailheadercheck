@@ -29,10 +29,32 @@ if __name__ == "__main__":
                         type=str,
                         default="",
                         help="Path to config file. If not provided, the following order will be tested: /etc/mailheadercheck/config.yaml, ./config.yaml")
+    parser.add_argument("--configcheck",
+                        action="store_true",
+                        help="Validate the configuration file and exit (does not start the milter)")
     parser.add_argument("--version", "-V", action="version", version=f"{NAME} {VERSION}")
     params = parser.parse_args()
 
     config = Cfg.find_and_parse_config_file(params.config)
+
+    # Run config validation before starting the milter
+    allowed_checks = set(MailHeaderCheckMilter.allChecks.keys())
+    if params.configcheck:
+        errors = Cfg.validate_config(config, allowed_checks)
+        for e in errors:
+            print(f"ERROR: {e}")
+        if errors:
+            sys.exit(1)
+        else:
+            print("Config validation successful.")
+            sys.exit(0)
+
+    # Normal startup: validation
+    errors = Cfg.validate_config(config, allowed_checks)
+    for e in errors:
+        print(f"ERROR: {e}")
+    if errors:
+        sys.exit(1)
 
     """ init logger """
     if config['log_target'] == 'syslog':

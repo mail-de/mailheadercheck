@@ -5,14 +5,62 @@ set -u
 failed=0
 total=0
 
+# Colors for output
+GREEN="\033[0;32m"
+RESET="\033[0m"
+
+# 1) Config syntax checks using --configcheck
+for cfg in tests/config_syntax/*.yaml; do
+    if [ ! -f "$cfg" ]; then
+        continue
+    fi
+
+    # Determine expected result from comment '# result: valid' or '# result: invalid'
+    expected=$(grep -m1 -E '^# *result: *(valid|invalid)' "$cfg" | sed -E 's/^# *result: *//')
+    if [ -z "${expected:-}" ]; then
+        echo "WARN: No '# result: valid|invalid' comment found in $cfg, defaulting to invalid"
+        expected="invalid"
+    fi
+
+    # --configcheck
+    total=$((total+1))
+    echo -n "Config syntax check (--configcheck) for $cfg (expected: $expected) ... "
+    out=$(./mailheadercheck --config "$cfg" --configcheck 2>&1)
+    rc=$?
+    if [ "$expected" = "valid" ]; then
+        if [ $rc -eq 0 ] && ! echo "$out" | grep -q "^ERROR: "; then
+            echo -e "${GREEN}Test successful${RESET}"
+        else
+            echo
+            echo "ERROR: Expected success and no ERROR output for $cfg (--configcheck)"
+            echo "$out"
+            failed=$((failed+1))
+        fi
+    else
+        if [ $rc -ne 0 ] && echo "$out" | grep -q "^ERROR: "; then
+            echo -e "${GREEN}Test successful${RESET}"
+        else
+            echo
+            echo "ERROR: Expected non-zero exit and ERROR output for $cfg (--configcheck)"
+            echo "$out"
+            failed=$((failed+1))
+        fi
+    fi
+done
+
+# 2) Run milter functional tests
 for testcase in tests/test-*.lua; do
     total=$((total+1))
-    echo "Running $testcase ..."
-    miltertest -s "$testcase"
+    echo -n "Running $testcase ... "
+    out=$(miltertest -s "$testcase" 2>&1)
     rc=$?
     if [ $rc -ne 0 ]; then
+        echo
         echo "ERROR: miltertest exited with code $rc for $testcase"
+        echo "$out"
         failed=$((failed+1))
+    else
+        echo -e "${GREEN}Test successful${RESET}"
     fi
 done
 

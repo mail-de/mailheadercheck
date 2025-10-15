@@ -249,4 +249,93 @@ class Cfg(object):
             sys.exit(1)
         return config
 
+    @staticmethod
+    def validate_config(config, allowed_checks):
+        errors = []
+
+        # log_target validation
+        valid_log_targets = {'syslog', 'file', 'stdout'}
+        lt = config.get('log_target')
+        if lt not in valid_log_targets:
+            errors.append(f"Invalid log_target '{lt}'. Allowed: syslog, file, stdout")
+
+        # socket validation: allow 'inet:<port>@<host>' or 'unix:<path>'
+        sock = config.get('socket', '')
+        if isinstance(sock, str):
+            if sock.startswith('inet:'):
+                try:
+                    rest = sock[len('inet:'):]
+                    port_str, host = rest.split('@', 1)
+                    port = int(port_str)
+                    if port < 1 or port > 65535 or not host:
+                        raise ValueError()
+                except Exception:
+                    errors.append(f"Invalid socket format '{sock}'. Expected inet:<port>@<host> or unix:<path>")
+            elif sock.startswith('unix:'):
+                path = sock[len('unix:'):]
+                if not path:
+                    errors.append(f"Invalid socket format '{sock}'. Expected unix:<path>")
+            else:
+                errors.append(f"Invalid socket format '{sock}'. Expected inet:<port>@<host> or unix:<path>")
+        else:
+            errors.append("Invalid socket value type. Expected string like 'inet:40000@localhost'")
+
+        # checks section must be a dict
+        checks_cfg = config.get('checks', {})
+        if checks_cfg is None:
+            checks_cfg = {}
+        if not isinstance(checks_cfg, dict):
+            errors.append("'checks' must be a mapping/dictionary")
+            checks_cfg = {}
+
+        # allowed per-check options
+        common_allowed_options = {
+            'exclude_envelopefrom_domains',
+            'exclude_fromheader_domains',
+            'exclude_envelopefrom_addresses',
+            'exclude_fromheader_addresses',
+            'exclude_sasl_usernames',
+            'exclude_ips',
+            'dry_run',
+        }
+        # special per-check options
+        per_check_specific = {
+            'long_subject_header': {'max_length'}
+        }
+
+        # unknown check names/options
+        for check_name, options in checks_cfg.items():
+            if check_name not in allowed_checks:
+                msg = f"Unknown check '{check_name}' configured; known checks: {', '.join(sorted(allowed_checks))}"
+                errors.append(msg)
+                # Skip further option validation for unknown checks
+                continue
+
+            if options is None:
+                # allow null/None meaning empty options
+                options = {}
+            if not isinstance(options, dict):
+                errors.append(f"Options for check '{check_name}' must be a mapping/dictionary")
+                continue
+
+            allowed_opts = set(common_allowed_options)
+            allowed_opts.update(per_check_specific.get(check_name, set()))
+            for opt_key in options.keys():
+                if opt_key not in allowed_opts:
+                    msg = f"Unknown option '{opt_key}' in check '{check_name}'"
+                    errors.append(msg)
+
+            # simple type validations
+            if 'dry_run' in options and options['dry_run'] not in (0, 1, '0', '1'):
+                errors.append(f"Invalid value for 'dry_run' in check '{check_name}': {options['dry_run']}")
+            if check_name == 'long_subject_header' and 'max_length' in options:
+                try:
+                    ml = int(options['max_length'])
+                    if ml < 1:
+                        raise ValueError()
+                except Exception:
+                    errors.append("'max_length' in 'long_subject_header' must be a positive integer")
+
+        return errors
+
 # vim: expandtab ts=4 sw=4

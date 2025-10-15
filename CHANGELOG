@@ -1,7 +1,10 @@
 v2025.2: ?
-    Fix: Typo in config parse error message.
+    Fix: Typo in config parse error message
     Fix: test-98.lua was failing, but was unnoticed. Now checking the exit code of miltertest to make sure it didn't crash/fail
-    Feat: Add --version flag; default logging fallback to stdout.
+    Feat: Add --version flag; default logging fallback to stdout
+    Feat: Add --configcheck to validate config without starting the milter (validation for log_target, socket, and per-check options)
+    Test: testing.sh prints concise green "Test successful"
+    Test: testing.sh reads '# result: valid|invalid' comments in tests/config_syntax to decide expected outcome
 
 v2025.1: 2025-10-08
     Added new exclusion options to support submission servers and full-address matching:
