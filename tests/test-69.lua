@@ -3,12 +3,9 @@ mt.echo("*** begin test-69 - 1 From, 1 Subject, 1 Date, 1 References")
 
 -- start the filter
 mt.startfilter("./mailheadercheck", "--config", "tests/config.yaml")
-mt.sleep(2)
-
--- try to connect to it
-conn = mt.connect("inet:40000@127.0.0.1")
+conn = mt.connect("inet:40000@127.0.0.1", 50, 0.1)
 if conn == nil then
-     error "mt.connect() failed"
+     error "mt.connect() failed (timeout waiting for filter to start)"
 end
 
 -- send envelope macros and sender data
@@ -62,3 +59,4 @@ end
 
 -- wrap it up!
 mt.disconnect(conn)
+mt.signal(9)  -- we want to kill the milter quickly, otherwise each test takes 2-3 seconds to finish

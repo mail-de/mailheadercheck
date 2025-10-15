@@ -3,12 +3,9 @@ mt.echo("*** begin test-83 - Missing Message-ID, but IP is listed in exclude_ips
 
 -- start the filter
 mt.startfilter("./mailheadercheck", "--config", "tests/test-83-config.yaml")
-mt.sleep(2)
-
--- try to connect to it
-conn = mt.connect("inet:40000@127.0.0.1")
+conn = mt.connect("inet:40000@127.0.0.1", 50, 0.1)
 if conn == nil then
-     error "mt.connect() failed"
+     error "mt.connect() failed (timeout waiting for filter to start)"
 end
 
 mt.conninfo(conn, "host.example.org", '12.34.56.78')
@@ -46,3 +43,4 @@ end
 
 -- wrap it up!
 mt.disconnect(conn)
+mt.signal(9)  -- we want to kill the milter quickly, otherwise each test takes 2-3 seconds to finish

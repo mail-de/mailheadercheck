@@ -57,7 +57,7 @@ fi
 for testcase in tests/test-*.lua; do
     total=$((total+1))
     echo -n "Running $testcase ... "
-    out=$(miltertest -s "$testcase" 2>&1)
+    out=$(miltertest -w -s "$testcase" 2>&1)
     rc=$?
     if [ $rc -ne 0 ]; then
         echo
