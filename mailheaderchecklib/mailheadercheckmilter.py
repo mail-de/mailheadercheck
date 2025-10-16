@@ -240,7 +240,7 @@ class MailHeaderCheckMilter(Milter.Base):
         if self.__config['log_format'] == 'json':
             log_output = json.dumps({
                 'connection_id': self.__connectionId,
-                'qid': self.getsymval('i'),
+                'queue_id': self.getsymval('i'),
                 'client_ip': self.__ip,
                 'sasl_username': self.__sasl_username,
                 'envelope_from': self.__envelopeFrom,
@@ -253,7 +253,7 @@ class MailHeaderCheckMilter(Milter.Base):
                 'dry_run': 'yes' if self.__dry_run_active else 'no'
             })
         else:
-            log_output = "connection_id={0} qid={1} client_ip=\"{2}\" sasl_username=\"{3}\" envelope_from=\"{4}\" header_from=\"{5}\" header_subject=\"{6}\" header_date=\"{7}\" error_response_text=\"{8}\" result={9} actiontaken={10} dry_run={11}".format(
+            log_output = "connection_id={0} queue_id={1} client_ip=\"{2}\" sasl_username=\"{3}\" envelope_from=\"{4}\" header_from=\"{5}\" header_subject=\"{6}\" header_date=\"{7}\" error_response_text=\"{8}\" result={9} actiontaken={10} dry_run={11}".format(
                 self.__connectionId,
                 self.getsymval('i'),
                 (self.__ip or '').replace('"', '\''),
@@ -273,7 +273,7 @@ class MailHeaderCheckMilter(Milter.Base):
         if 'add_result_header' in self.__config and self.__config['add_result_header'] == 1:
             header_output = json.dumps({
                 'connection_id': self.__connectionId,
-                'qid': self.getsymval('i'),
+                'queue_id': self.getsymval('i'),
                 'error_response_text': failedCheck,
                 'result': check_result,
                 'actiontaken': actiontaken,
