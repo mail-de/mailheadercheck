@@ -206,7 +206,8 @@ docker compose up -d --build
 ```
 
    This will:
-   * build a minimal Python image with the milter
+   * build a minimal image with the milter. While building, it will also run
+     the tests.
    * mount docker/config.yaml into the container at /config/config.yaml
    * listen on TCP port 30073 inside the container and publish it to the host
 
