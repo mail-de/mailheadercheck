@@ -1,5 +1,5 @@
-# everything is fine
-# result: valid
+# invalid socket: correct would be inet:40000@localhost
+# result: invalid
 
 debug: 1
 log_target: file
@@ -9,7 +9,7 @@ log_filepath: /dev/null
 syslog_name: mailheadercheck
 syslog_facility: mail
 
-socket: inet:40000@localhost
+socket: inet:localhost@40000
 
 dry_run: 0
 
@@ -27,7 +27,9 @@ checks:
     multiple_replyto_headers: {}
     multiple_to_headers: {}
     multiple_cc_headers: {}
-    missing_messageid_header: {}
+    missing_messageid_header:
+        exclude_fromheader_domains:
+            - example.net
     multiple_messageid_headers: {}
     multiple_inreplyto_headers: {}
     multiple_references_headers: {}

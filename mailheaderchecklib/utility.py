@@ -259,24 +259,34 @@ class Cfg(object):
         if lt not in valid_log_targets:
             errors.append(f"Invalid log_target '{lt}'. Allowed: syslog, file, stdout")
 
-        # socket validation: allow 'inet:<port>@<host>' or 'unix:<path>'
+        # socket validation: allow 'inet:<port>@<host>', 'inet6:<port>@<host>', 'unix:<path>' or 'local:<path>'
         sock = config.get('socket', '')
         if isinstance(sock, str):
-            if sock.startswith('inet:'):
+            if sock.startswith('inet:') or sock.startswith('inet6:'):
                 try:
-                    rest = sock[len('inet:'):]
+                    if sock.startswith('inet:'):
+                        rest = sock[len('inet:'):]
+                    else:
+                        rest = sock[len('inet6:'):]
                     port_str, host = rest.split('@', 1)
                     port = int(port_str)
                     if port < 1 or port > 65535 or not host:
                         raise ValueError()
                 except Exception:
-                    errors.append(f"Invalid socket format '{sock}'. Expected inet:<port>@<host> or unix:<path>")
-            elif sock.startswith('unix:'):
-                path = sock[len('unix:'):]
+                    errors.append(
+                        f"Invalid socket format '{sock}'. Expected inet:<port>@<host>, inet6:<port>@<host>, unix:<path> or local:<path>"
+                    )
+            elif sock.startswith('unix:') or sock.startswith('local:'):
+                if sock.startswith('unix:'):
+                    path = sock[len('unix:'):]
+                else:
+                    path = sock[len('local:'):]
                 if not path:
-                    errors.append(f"Invalid socket format '{sock}'. Expected unix:<path>")
+                    errors.append(f"Invalid socket format '{sock}'. Expected unix:<path> or local:<path>")
             else:
-                errors.append(f"Invalid socket format '{sock}'. Expected inet:<port>@<host> or unix:<path>")
+                errors.append(
+                    f"Invalid socket format '{sock}'. Expected inet:<port>@<host>, inet6:<port>@<host>, unix:<path> or local:<path>"
+                )
         else:
             errors.append("Invalid socket value type. Expected string like 'inet:40000@localhost'")
 

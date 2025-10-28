@@ -6,6 +6,7 @@ v2025.2: ?
     Test: testing.sh prints concise green "Test successful"
     Test: testing.sh reads '# result: valid|invalid' comments in tests/config_syntax to decide expected outcome
     Test: improved performance of all .lua tests by removing sleep(2) when connecting and using retry mechanism in mt.connect(). Also killing the milter with signal 9 instead of waiting for it to shut down (takes 2-3 seconds or so)
+    Docker: Added first version of DockerFile and docker-compose.yml
     BREAKING CHANGE: Renamed 'qid' to 'queue_id' as this is the identifier used by Postfix
 
 v2025.1: 2025-10-08

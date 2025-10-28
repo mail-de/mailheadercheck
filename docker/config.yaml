@@ -14,6 +14,7 @@ add_result_header: 0
 # inet:port@ipv4
 # inet6:port@ipv6
 # unix:/path/to/socket
+# local:/path/to/socket
 socket: inet:30073@0.0.0.0
 
 # Keep dry-run as default safe mode

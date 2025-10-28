@@ -109,6 +109,7 @@ The "socket" setting can have one of the following formats:
 * inet:port@ipv4
 * inet6:port@ipv6
 * unix:/path/to/socket
+* local:/path/to/socket
 
 ### add_result_header
 
