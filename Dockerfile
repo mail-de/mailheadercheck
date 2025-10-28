@@ -17,16 +17,13 @@ RUN    apt-get -y update \
          python3-milter \
          python3-yaml \
     && rm -rf /var/lib/apt/lists/* \
-
     # explicit set permissions
     && find /app -type d -exec chmod 0555 {} \; \
     && find /app -type f -exec chmod 0444 {} \; \
     && chmod 0555 /app/mailheadercheck \
                   /app/testing.sh \
-
     # run tests
     && /app/testing.sh \
-
     # cleanup files in /app only used to run tests
     && rm -rf testing.sh \
               tests
