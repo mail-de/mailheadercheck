@@ -1,4 +1,4 @@
-v2025.2: ?
+v2025.2: 2025-11-03
     Fix: Typo in config parse error message
     Fix: test-98.lua was failing, but was unnoticed. Now checking the exit code of miltertest to make sure it didn't crash/fail
     Feat: Add --version flag; default logging fallback to stdout
