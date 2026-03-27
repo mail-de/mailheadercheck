@@ -67,3 +67,5 @@ Check if 'X-MailHeaderCheck' header is added                       test-85
 0 Message-ID:-Header, and Envelope-From NOT in exclude_envelopefrom_addresses     test-97
 0 Message-ID:-Header, but SASL username in exclude_sasl_usernames                 test-98
 0 Message-ID:-Header, and SASL username NOT in exclude_sasl_usernames             test-99
+
+From with multiple addresses, but check has enabled=0                             test-100

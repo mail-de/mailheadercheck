@@ -81,6 +81,24 @@ Additionally, you can change the "dry_run" setting in each check
 individually. With this you can either set "dry_run" globally to 1, and
 then individual checks to 0. Or the other way around.
 
+### enabled (per check)
+
+Each check can be individually disabled by setting `enabled: 0` under
+`checks.<check_name>`. A disabled check is skipped entirely: it does not
+log, does not count as a violation, and does not appear in the summary
+line. This is different from `dry_run: 1`, which still runs the check and
+logs the result but does not reject the message.
+
+Example — disable the "not exactly one address in From" check:
+
+```yaml
+checks:
+  not_exactly_one_address_in_from_header:
+    enabled: 0
+```
+
+If `enabled` is absent (the default), the check runs normally.
+
 ### log_target
 
 You can choose from the following log targets:

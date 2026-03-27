@@ -113,6 +113,18 @@ class CheckUtils():
             return True
         return False
 
+    def check_is_enabled(config, checkName):
+        try:
+            enabled_value = config['checks'][checkName]['enabled']
+        except KeyError:
+            return True
+        except TypeError:    #  TypeError: "'NoneType' object is not subscriptable". Happens if in yaml you don't configure empty dict, but Nothing/None
+            return True
+
+        if str(enabled_value) == '0':   # We cast to str here, so users can use integers or strings in config.yaml
+            return False
+        return True
+
     def not_exactly_one_address_in_from_header(config, headers):
         if 'from' not in headers:
             return False
@@ -307,6 +319,7 @@ class Cfg(object):
             'exclude_sasl_usernames',
             'exclude_ips',
             'dry_run',
+            'enabled',
         }
         # special per-check options
         per_check_specific = {
@@ -338,6 +351,8 @@ class Cfg(object):
             # simple type validations
             if 'dry_run' in options and options['dry_run'] not in (0, 1, '0', '1'):
                 errors.append(f"Invalid value for 'dry_run' in check '{check_name}': {options['dry_run']}")
+            if 'enabled' in options and options['enabled'] not in (0, 1, '0', '1'):
+                errors.append(f"Invalid value for 'enabled' in check '{check_name}': {options['enabled']}")
             if check_name == 'long_subject_header' and 'max_length' in options:
                 try:
                     ml = int(options['max_length'])

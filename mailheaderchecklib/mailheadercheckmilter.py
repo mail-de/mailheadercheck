@@ -164,6 +164,10 @@ class MailHeaderCheckMilter(Milter.Base):
         failedCheck = ''
 
         for checkName, oneCheck in self.allChecks.items():
+            if not CheckUtils.check_is_enabled(self.__config, checkName):
+                self.__logging.debug(self.__connectionId+' Check "'+checkName+'" is disabled (enabled=0), skipping')
+                continue
+
             self.__logging.debug(self.__connectionId+' Running check: ' + oneCheck['niceName'] + '('+checkName+')')
 
             self.__logging.debug(self.__connectionId+' Check if the SASL username is on exclude_sasl_usernames list of check "'+checkName+'"')
