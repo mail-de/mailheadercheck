@@ -161,7 +161,7 @@ class MailHeaderCheckMilter(Milter.Base):
 
         check_result = 'accept'
         actiontaken = 'accept'
-        failedCheck = ''
+        failedChecks = []
 
         for checkName, oneCheck in self.allChecks.items():
             if not CheckUtils.check_is_enabled(self.__config, checkName):
@@ -200,7 +200,7 @@ class MailHeaderCheckMilter(Milter.Base):
             self.__logging.debug(self.__connectionId+' Check result: ' + str(check_response))
             if check_response == True:
                 check_result = 'reject'
-                failedCheck = oneCheck['niceName']
+                failedChecks.append(oneCheck['niceName'])
                 if CheckUtils.single_check_dry_run_active(self.__config, checkName):
                     self.__logging.debug(self.__connectionId+' This check returned a reject, BUT the check is marked as "dry_run=1". Proceeding with checks...')
                 elif self.__dry_run_active == False:
@@ -210,8 +210,10 @@ class MailHeaderCheckMilter(Milter.Base):
                 else:
                     self.__logging.debug(self.__connectionId+' This check returned a reject, BUT global dry-run is active. Proceeding with checks...')
 
+        failedCheckStr = ', '.join(failedChecks)
+
         if actiontaken == 'reject':
-            self.setreply("554", xcode="5.7.0", msg="Header violation: " + failedCheck)
+            self.setreply("554", xcode="5.7.0", msg="Header violation: " + failedChecks[-1])
 
         """ Prepare headers for log output """
         if 'from' not in self.__headers:
@@ -251,7 +253,7 @@ class MailHeaderCheckMilter(Milter.Base):
                 'header_from': fromHeader,
                 'header_subject': subjectHeader,
                 'header_date': dateHeader,
-                'error_response_text': failedCheck,
+                'error_response_text': failedCheckStr,
                 'result': check_result,
                 'actiontaken': actiontaken,
                 'dry_run': 'yes' if self.__dry_run_active else 'no'
@@ -266,7 +268,7 @@ class MailHeaderCheckMilter(Milter.Base):
                 fromHeader.replace('"', '\''),
                 subjectHeader.replace('"', '\''),
                 dateHeader,
-                failedCheck,
+                failedCheckStr,
                 check_result,
                 actiontaken,
                 'yes' if self.__dry_run_active else 'no'
@@ -278,7 +280,7 @@ class MailHeaderCheckMilter(Milter.Base):
             header_output = json.dumps({
                 'connection_id': self.__connectionId,
                 'queue_id': self.getsymval('i'),
-                'error_response_text': failedCheck,
+                'error_response_text': failedCheckStr,
                 'result': check_result,
                 'actiontaken': actiontaken,
                 'dry_run': 'yes' if self.__dry_run_active else 'no'
