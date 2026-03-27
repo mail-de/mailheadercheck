@@ -136,6 +136,13 @@ the name "X-MailHeaderCheck". It contains a JSON string with the fields
 "connection_id", "queue_id", "error_response_text", "result",
 "actiontaken" and "dry_run".
 
+### The checks: section
+
+**All checks are always active by default.** Listing or omitting a check
+name in the `checks:` section does not enable or disable it — the section
+only configures per-check options. To fully disable a single check, set
+`enabled: 0` for it (see [enabled (per check)](#enabled-per-check) above).
+
 ### Exclusion options (per check)
 
 Each check can be configured with exclusion lists to skip enforcement for
