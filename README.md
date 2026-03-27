@@ -132,8 +132,9 @@ The "socket" setting can have one of the following formats:
 ### add_result_header
 
 Setting "add_result_header" to 1 will add a header to the email with
-the name "X-MailHeaderCheck". It contains a JSON string with the "qid",
-"error_response_text", "result", "actiontaken" and "dry_run".
+the name "X-MailHeaderCheck". It contains a JSON string with the fields
+"connection_id", "queue_id", "error_response_text", "result",
+"actiontaken" and "dry_run".
 
 ### Exclusion options (per check)
 
