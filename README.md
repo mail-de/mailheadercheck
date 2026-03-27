@@ -120,6 +120,42 @@ write the Subject:-header or From:-header to the logfile.
 
 log_privacy_mode=0 deactivates the privacy mode.
 
+### Log output
+
+One summary line is written per message (at INFO level). Examples for
+both formats — first an accepted message, then a rejected one:
+
+**plain** (`log_format: plain`):
+```
+mailheadercheck[1234]: connection_id=A1B2C3D4E5F6 queue_id=3xHt2f001234 client_ip="192.0.2.10" sasl_username="" envelope_from="<sender@example.com>" header_from="Sender Name <sender@example.com>" header_subject="Hello world" header_date="Wed, 23 Jun 2021 16:30:55 +0200" error_response_text="" result=accept actiontaken=accept dry_run=no
+mailheadercheck[1234]: connection_id=A1B2C3D4E5F6 queue_id=3xHt2f001235 client_ip="192.0.2.10" sasl_username="" envelope_from="<sender@example.com>" header_from="missing-from-header" header_subject="Hello world" header_date="Wed, 23 Jun 2021 16:30:55 +0200" error_response_text="Missing From:-Header" result=reject actiontaken=reject dry_run=no
+```
+
+**json** (`log_format: json`):
+```json
+{"connection_id": "A1B2C3D4E5F6", "queue_id": "3xHt2f001234", "client_ip": "192.0.2.10", "sasl_username": null, "envelope_from": "<sender@example.com>", "header_from": "Sender Name <sender@example.com>", "header_subject": "Hello world", "header_date": "Wed, 23 Jun 2021 16:30:55 +0200", "error_response_text": "", "result": "accept", "actiontaken": "accept", "dry_run": "no"}
+{"connection_id": "A1B2C3D4E5F6", "queue_id": "3xHt2f001235", "client_ip": "192.0.2.10", "sasl_username": null, "envelope_from": "<sender@example.com>", "header_from": "missing-from-header", "header_subject": "Hello world", "header_date": "Wed, 23 Jun 2021 16:30:55 +0200", "error_response_text": "Missing From:-Header", "result": "reject", "actiontaken": "reject", "dry_run": "no"}
+```
+
+Field notes:
+
+* `connection_id` — random 12-character ID assigned per TCP connection;
+  links debug log lines to the summary line for that connection.
+* `queue_id` — Postfix queue ID.
+* `sasl_username` — authenticated SASL username, or `null` / empty if the
+  connection is not authenticated.
+* `error_response_text` — name of the failing check, or empty if the
+  message was accepted. In dry_run mode, multiple violations are listed
+  comma-separated.
+* `result` — `accept` or `reject` based on what the checks found.
+* `actiontaken` — `accept` or `reject` reflecting what was actually done.
+  Differs from `result` when dry_run is active: `result` can be `reject`
+  while `actiontaken` is `accept`.
+* `header_from` and `header_subject` — set to `privacy-mode-active` when
+  `log_privacy_mode: 1`. Set to `missing-from-header` /
+  `missing-subject-header` or `multiple-from-headers` /
+  `multiple-subject-headers` in the respective error cases.
+
 ### socket
 
 The "socket" setting can have one of the following formats:
