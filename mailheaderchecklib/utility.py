@@ -271,6 +271,26 @@ class Cfg(object):
         if lt not in valid_log_targets:
             errors.append(f"Invalid log_target '{lt}'. Allowed: syslog, file, stdout")
 
+        # log_format validation
+        lf = config.get('log_format')
+        if lf not in ('plain', 'json'):
+            errors.append(f"Invalid log_format '{lf}'. Allowed: plain, json")
+
+        # debug validation
+        debug_val = config.get('debug', 0)
+        if debug_val not in (0, 1, '0', '1'):
+            errors.append(f"Invalid debug value '{debug_val}'. Allowed: 0, 1")
+
+        # log_privacy_mode validation
+        lpm = config.get('log_privacy_mode', 1)
+        if lpm not in (0, 1, '0', '1'):
+            errors.append(f"Invalid log_privacy_mode value '{lpm}'. Allowed: 0, 1")
+
+        # add_result_header validation
+        arh = config.get('add_result_header', 0)
+        if arh not in (0, 1, '0', '1'):
+            errors.append(f"Invalid add_result_header value '{arh}'. Allowed: 0, 1")
+
         # socket validation: allow 'inet:<port>@<host>', 'inet6:<port>@<host>', 'unix:<path>' or 'local:<path>'
         sock = config.get('socket', '')
         if isinstance(sock, str):
