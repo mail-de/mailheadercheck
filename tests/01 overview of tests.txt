@@ -69,3 +69,4 @@ Check if 'X-MailHeaderCheck' header is added                       test-85
 0 Message-ID:-Header, and SASL username NOT in exclude_sasl_usernames             test-99
 
 From with multiple addresses, but check has enabled=0                             test-100
+From header with name but no email address (no '@')                               test-101

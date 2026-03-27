@@ -131,7 +131,7 @@ class CheckUtils():
 
         try:
             all_emails = getaddresses([headers['from']])
-            all_emails = [x[1].lower() for x in all_emails]
+            all_emails = [x[1].lower() for x in all_emails if '@' in x[1]]
             all_emails = set(all_emails)
 
             if len(all_emails) != 1:  # While technically RFC conform, we do not allow multiple addresses in the From:-header

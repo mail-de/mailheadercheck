@@ -1,6 +1,7 @@
 vNext:
     Feat: Add per-check "enabled: 0" option to fully disable individual checks (distinct from dry_run: 1 which still logs violations)
     Fix: In dry_run mode, all failing checks are now reported in error_response_text (comma-separated) instead of only the last one; the SMTP reject message still names only the check that triggered the actual rejection
+    Fix: not_exactly_one_address_in_from_header now rejects From headers that contain a display name but no email address (no '@')
 
 v2025.2: 2025-11-03
     Fix: Typo in config parse error message
