@@ -257,7 +257,7 @@ class Cfg(object):
             with yaml_data_file as f:
                 config = yaml.safe_load(f)
         except yaml.YAMLError as e:
-            print('FATAL: config.yaml could not be parsed. Error message: "'+e.msg+'". Exiting...')
+            print('FATAL: config.yaml could not be parsed. Error message: "'+str(e)+'". Exiting...')
             sys.exit(1)
         return config
 
