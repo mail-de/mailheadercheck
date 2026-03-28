@@ -49,8 +49,10 @@ if __name__ == "__main__":
     # Run config validation before starting the milter
     allowed_checks = {check.name for check in CHECKS}
     if params.configcheck:
-        errors = Cfg.validate_config(config, allowed_checks)
+        errors, warnings = Cfg.validate_config(config, allowed_checks)
         errors += check_dependencies(config)
+        for w in warnings:
+            print(f"WARNING: {w}")
         for e in errors:
             print(f"ERROR: {e}")
         if errors:
@@ -60,8 +62,10 @@ if __name__ == "__main__":
             sys.exit(0)
 
     # Normal startup: validation
-    errors = Cfg.validate_config(config, allowed_checks)
+    errors, warnings = Cfg.validate_config(config, allowed_checks)
     errors += check_dependencies(config)
+    for w in warnings:
+        print(f"WARNING: {w}")
     for e in errors:
         print(f"ERROR: {e}")
     if errors:
@@ -101,7 +105,9 @@ if __name__ == "__main__":
             logging.error("%s: Config reload aborted: could not read config file", NAME)
             record_config_reload(False)
             return
-        new_errors = Cfg.validate_config(new_config, allowed_checks)
+        new_errors, new_warnings = Cfg.validate_config(new_config, allowed_checks)
+        for wrn in new_warnings:
+            logging.warning("%s: Config warning: %s", NAME, wrn)
         if new_errors:
             for err in new_errors:
                 logging.error("%s: Config reload failed: %s", NAME, err)

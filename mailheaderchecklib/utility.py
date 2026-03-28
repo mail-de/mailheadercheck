@@ -137,6 +137,8 @@ class CheckUtils:
         except TypeError:
             #  TypeError: "'NoneType' object is not subscriptable"
             pass
+        except ValueError:
+            pass
 
         return False
 
@@ -277,10 +279,26 @@ class Cfg:
         return config
 
     @staticmethod
-    def validate_config(config: dict[str, Any], allowed_checks: set[str]) -> list[str]:
-        """Validate config dict; return list of error strings (empty = valid)."""
+    def validate_config(
+            config: dict[str, Any], allowed_checks: set[str]
+    ) -> tuple[list[str], list[str]]:
+        """Validate config dict; return (errors, warnings).
+
+        Errors block startup/reload; warnings are logged but do not block.
+        """
         # pylint: disable=too-many-branches,too-many-statements,too-many-locals
-        errors = []
+        errors: list[str] = []
+        warnings: list[str] = []
+
+        # unknown top-level keys
+        allowed_top_level = {
+            'log_target', 'log_format', 'debug', 'log_privacy_mode', 'add_result_header',
+            'socket', 'dry_run', 'syslog_name', 'syslog_facility', 'log_filepath',
+            'checks', 'metrics',
+        }
+        for key in config:
+            if key not in allowed_top_level:
+                warnings.append(f"Unknown top-level config key '{key}' — ignored")
 
         # log_target validation
         valid_log_targets = {'syslog', 'file', 'stdout'}
@@ -307,6 +325,21 @@ class Cfg:
         arh = config.get('add_result_header', 0)
         if arh not in (0, 1, '0', '1'):
             errors.append(f"Invalid add_result_header value '{arh}'. Allowed: 0, 1")
+
+        # dry_run validation
+        dr = config.get('dry_run', 1)
+        if dr not in (0, 1, '0', '1'):
+            errors.append(f"Invalid dry_run value '{dr}'. Allowed: 0, 1")
+
+        # syslog_facility validation (only relevant when log_target is syslog)
+        sf = config.get('syslog_facility')
+        if sf is not None:
+            valid_facilities = set(logging.handlers.SysLogHandler.facility_names.keys())
+            if str(sf).lower() not in valid_facilities:
+                errors.append(
+                    f"Invalid syslog_facility '{sf}'."
+                    f" Allowed: {', '.join(sorted(valid_facilities))}"
+                )
 
         # socket validation: allow 'inet:<port>@<host>', 'inet6:<port>@<host>',
         # 'unix:<path>' or 'local:<path>'
@@ -446,6 +479,6 @@ class Cfg:
                         " Must be a non-empty string"
                     )
 
-        return errors
+        return errors, warnings
 
 # vim: expandtab ts=4 sw=4
