@@ -39,8 +39,8 @@ mailheadercheck script into /usr/local/sbin/. Place the systemd unit file into
 /etc/systemd/system/:
 
 ```
-sudo apt install python3-dev libmilter-dev python3-pip python3-yaml
-sudo pip3 install pymilter
+sudo apt install python3-dev libmilter-dev python3-pip
+sudo pip3 install -r requirements.txt
 sudo cp mailheadercheck /usr/local/sbin/
 sudo cp -r mailheaderchecklib /usr/local/sbin/
 sudo chmod 755 /usr/local/sbin/mailheadercheck
