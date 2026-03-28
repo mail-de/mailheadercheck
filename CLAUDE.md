@@ -10,9 +10,12 @@ The main script is the executable `mailheadercheck` (no extension) which imports
 
 ## Running tests
 
-Tests require `miltertest` (from the `miltertest` or `opendkim-tools` apt package) and Python dependencies (`pymilter`, `PyYAML`).
+Tests require `miltertest` (from the `miltertest` or `opendkim-tools` apt package) and Python dependencies from `requirements.txt`.
 
 ```sh
+# Install Python dependencies
+pip install -r requirements.txt
+
 # Run all tests
 ./testing.sh
 
@@ -60,7 +63,9 @@ mailheaderchecklib/
 
 **dry_run** can be set globally or per-check. If active, the check logs a would-be reject but continues and accepts the message. Default when not configured: dry_run is active.
 
-**Config validation** (`Cfg.validate_config`) is invoked when `--configcheck` is passed. It validates `log_target`, `socket` format, and all per-check options.
+**Config validation** (`Cfg.validate_config`) is invoked when `--configcheck` is passed and also on every normal startup. It validates `log_target`, `log_format`, `debug`, `log_privacy_mode`, `add_result_header`, `socket` format, and all per-check option names and values.
+
+**SIGHUP** reloads the config file at runtime (`kill -HUP $PID` or `systemctl reload`). Only per-message settings take effect immediately (check options, exclusion lists, dry_run, enabled). Settings applied at startup only (`log_target`, `log_format`, `socket`, syslog settings, `log_filepath`) require a full restart.
 
 ## Test structure
 

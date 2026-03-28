@@ -27,7 +27,9 @@ checks:
     multiple_from_headers:
         dry_run: 1
     empty_from_header: {}
-    not_exactly_one_address_in_from_header: {}
+    not_exactly_one_address_in_from_header:
+        # set enabled: 0 to fully disable a check (no log, no reject, not shown in summary line)
+        enabled: 1
     multiple_subject_headers: {}
     long_subject_header:
         max_length: 5000
