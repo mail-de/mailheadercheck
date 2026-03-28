@@ -1,3 +1,4 @@
+"""Utility classes and configuration for mailheadercheck."""
 from __future__ import annotations
 
 from email.utils import getaddresses
@@ -8,39 +9,52 @@ import ipaddress
 import sys
 import yaml
 
-class CheckUtils():
-    @staticmethod
-    def domain_found_in_exclude_list(config: dict[str, Any], headers: dict[str, str], envelopeFrom: str, checkName: str) -> bool:
 
-        """ check exclude_envelopefrom_domains """
+class CheckUtils:
+    """Static utility methods for evaluating per-check exclusion lists and flags."""
+
+    @staticmethod
+    def domain_found_in_exclude_list(
+            config: dict[str, Any], headers: dict[str, str],
+            envelope_from: str, check_name: str) -> bool:
+        """Return True if the envelope-from or From-header domain is in an exclude list."""
+        # check exclude_envelopefrom_domains
         try:
-            exclude_envelopefrom_domains = [domain.lower() for domain in config['checks'][checkName]['exclude_envelopefrom_domains']]
-            envelopeFrom = envelopeFrom.strip('<>')
-            domain = envelopeFrom[envelopeFrom.index('@') + 1 : ].lower()
+            exclude_envelopefrom_domains = [
+                domain.lower()
+                for domain in config['checks'][check_name]['exclude_envelopefrom_domains']
+            ]
+            envelope_from = envelope_from.strip('<>')
+            domain = envelope_from[envelope_from.index('@') + 1:].lower()
             if domain in exclude_envelopefrom_domains:
                 return True
         except KeyError:
             pass
-        except TypeError:    #  TypeError: "'NoneType' object is not subscriptable". Happens if in yaml you don't configure empty dict, but Nothing/None
+        except TypeError:
+            #  TypeError: "'NoneType' object is not subscriptable"
             pass
         except ValueError:   # substring '@' not found
             pass
 
-        """ check exclude_fromheader_domains """
+        # check exclude_fromheader_domains
         if 'from' not in headers:
             return False
         try:
-            exclude_fromheader_domains = [domain.lower() for domain in config['checks'][checkName]['exclude_fromheader_domains']]
+            exclude_fromheader_domains = [
+                domain.lower()
+                for domain in config['checks'][check_name]['exclude_fromheader_domains']
+            ]
             all_emails = getaddresses([headers['from']])
             for email_addr in all_emails:
                 # getaddresses returns (name, email) tuples
-                name, emailaddress = email_addr
-                domain = emailaddress[emailaddress.index('@') + 1 : ].lower()
+                _, emailaddress = email_addr
+                domain = emailaddress[emailaddress.index('@') + 1:].lower()
                 if domain in exclude_fromheader_domains:
                     return True
         except KeyError:
             pass
-        except TypeError:    #  TypeError: "'NoneType' object is not subscriptable". Happens if in yaml you don't configure empty dict, but Nothing/None
+        except TypeError:
+            #  TypeError: "'NoneType' object is not subscriptable"
             pass
         except ValueError:   # substring '@' not found
             pass
@@ -48,12 +62,17 @@ class CheckUtils():
         return False
 
     @staticmethod
-    def envelopefrom_found_in_exclude_list(config: dict[str, Any], envelopeFrom: str, checkName: str) -> bool:
-        """ check exclude_envelopefrom_addresses (full addresses) """
+    def envelopefrom_found_in_exclude_list(
+            config: dict[str, Any], envelope_from: str, check_name: str) -> bool:
+        """Return True if the envelope-from address is in the exclude list."""
+        # check exclude_envelopefrom_addresses (full addresses)
         try:
-            exclude_envelopefrom_addresses = [addr.lower() for addr in config['checks'][checkName]['exclude_envelopefrom_addresses']]
-            envelopeFromNorm = envelopeFrom.strip('<>').lower()
-            if envelopeFromNorm in exclude_envelopefrom_addresses:
+            exclude_envelopefrom_addresses = [
+                addr.lower()
+                for addr in config['checks'][check_name]['exclude_envelopefrom_addresses']
+            ]
+            envelope_from_norm = envelope_from.strip('<>').lower()
+            if envelope_from_norm in exclude_envelopefrom_addresses:
                 return True
         except KeyError:
             pass
@@ -62,14 +81,19 @@ class CheckUtils():
         return False
 
     @staticmethod
-    def fromheader_found_in_exclude_list(config: dict[str, Any], headers: dict[str, str], checkName: str) -> bool:
-        """ check exclude_fromheader_addresses (full addresses from From: header) """
+    def fromheader_found_in_exclude_list(
+            config: dict[str, Any], headers: dict[str, str], check_name: str) -> bool:
+        """Return True if any From-header address is in the exclude list."""
+        # check exclude_fromheader_addresses (full addresses from From: header)
         if 'from' not in headers:
             return False
         try:
-            exclude_fromheader_addresses = [addr.lower() for addr in config['checks'][checkName]['exclude_fromheader_addresses']]
+            exclude_fromheader_addresses = [
+                addr.lower()
+                for addr in config['checks'][check_name]['exclude_fromheader_addresses']
+            ]
             all_emails = getaddresses([headers['from']])
-            for name, emailaddress in all_emails:
+            for _, emailaddress in all_emails:
                 if emailaddress and emailaddress.lower() in exclude_fromheader_addresses:
                     return True
         except KeyError:
@@ -79,12 +103,17 @@ class CheckUtils():
         return False
 
     @staticmethod
-    def sasl_found_in_exclude_list(config: dict[str, Any], sasl_username: str | None, checkName: str) -> bool:
-        """ check exclude_sasl_usernames """
+    def sasl_found_in_exclude_list(
+            config: dict[str, Any], sasl_username: str | None, check_name: str) -> bool:
+        """Return True if the SASL username is in the exclude list."""
+        # check exclude_sasl_usernames
         if not sasl_username:
             return False
         try:
-            exclude_sasl_usernames = [u.lower() for u in config['checks'][checkName]['exclude_sasl_usernames']]
+            exclude_sasl_usernames = [
+                u.lower()
+                for u in config['checks'][check_name]['exclude_sasl_usernames']
+            ]
             if sasl_username.lower() in exclude_sasl_usernames:
                 return True
         except KeyError:
@@ -94,53 +123,65 @@ class CheckUtils():
         return False
 
     @staticmethod
-    def ip_found_in_exclude_ip_list(config: dict[str, Any], ip: str, checkName: str) -> bool:
-
-        """ check if exclude_ips has been configured for this check """
+    def ip_found_in_exclude_ip_list(
+            config: dict[str, Any], ip: str, check_name: str) -> bool:
+        """Return True if the client IP matches an entry in the exclude_ips list."""
+        # check if exclude_ips has been configured for this check
         try:
-            exclude_ip_list = config['checks'][checkName]['exclude_ips']
+            exclude_ip_list = config['checks'][check_name]['exclude_ips']
             for exclude_ip in exclude_ip_list:
                 if ipaddress.ip_address(ip) in ipaddress.ip_network(exclude_ip):
                     return True
         except KeyError:
             pass
-        except TypeError:    #  TypeError: "'NoneType' object is not subscriptable". Happens if in yaml you don't configure empty dict, but Nothing/None
+        except TypeError:
+            #  TypeError: "'NoneType' object is not subscriptable"
             pass
 
         return False
 
     @staticmethod
-    def single_check_dry_run_active(config: dict[str, Any], checkName: str) -> bool:
+    def single_check_dry_run_active(config: dict[str, Any], check_name: str) -> bool:
+        """Return True if dry_run is set to 1 for the given check."""
         try:
-            action_value = config['checks'][checkName]['dry_run']
+            action_value = config['checks'][check_name]['dry_run']
         except KeyError:
             return False
-        except TypeError:    #  TypeError: "'NoneType' object is not subscriptable". Happens if in yaml you don't configure empty dict, but Nothing/None
+        except TypeError:
+            #  TypeError: "'NoneType' object is not subscriptable"
             return False
 
-        if str(action_value) == '1':   # We cast to str here, so users can use integers or strings in config.json
+        if str(action_value) == '1':   # cast to str so users can use integers or strings
             return True
         return False
 
     @staticmethod
-    def check_is_enabled(config: dict[str, Any], checkName: str) -> bool:
+    def check_is_enabled(config: dict[str, Any], check_name: str) -> bool:
+        """Return True if the check is enabled (enabled != 0)."""
         try:
-            enabled_value = config['checks'][checkName]['enabled']
+            enabled_value = config['checks'][check_name]['enabled']
         except KeyError:
             return True
-        except TypeError:    #  TypeError: "'NoneType' object is not subscriptable". Happens if in yaml you don't configure empty dict, but Nothing/None
+        except TypeError:
+            #  TypeError: "'NoneType' object is not subscriptable"
             return True
 
-        if str(enabled_value) == '0':   # We cast to str here, so users can use integers or strings in config.yaml
+        if str(enabled_value) == '0':   # cast to str so users can use integers or strings
             return False
         return True
 
-class Logger():
+
+class Logger:
+    """Factory for creating configured Python logger instances."""
+
     @staticmethod
-    def getSyslogLogger(config: dict[str, Any]) -> logging.Logger:
+    def get_syslog_logger(config: dict[str, Any]) -> logging.Logger:
+        """Return a logger that writes to syslog."""
         log = logging.getLogger(config['syslog_name'])
-        log.setLevel(Logger.getLogLevel(config))
-        handler = logging.handlers.SysLogHandler(address = '/dev/log', facility = config['syslog_facility'])
+        log.setLevel(Logger.get_log_level(config))
+        handler = logging.handlers.SysLogHandler(
+            address='/dev/log', facility=config['syslog_facility']
+        )
         if config['log_format'] == 'json':
             formatter = logging.Formatter('%(message)s')
         else:
@@ -150,25 +191,33 @@ class Logger():
         return log
 
     @staticmethod
-    def getFileLogger(config: dict[str, Any]) -> Any:
+    def get_file_logger(config: dict[str, Any]) -> Any:
+        """Return a logger that writes to a file."""
         if config['log_format'] == 'json':
-            format = '%(message)s'
+            log_format = '%(message)s'
         else:
-            format = '%(name)s[%(process)d]: %(message)s'
-        logging.basicConfig(format=format, filename=config['log_filepath'], level=Logger.getLogLevel(config))
+            log_format = '%(name)s[%(process)d]: %(message)s'
+        logging.basicConfig(
+            format=log_format,
+            filename=config['log_filepath'],
+            level=Logger.get_log_level(config),
+            encoding='utf-8',
+        )
         return logging
 
     @staticmethod
-    def getStdoutLogger(config: dict[str, Any]) -> Any:
+    def get_stdout_logger(config: dict[str, Any]) -> Any:
+        """Return a logger that writes to stdout."""
         if config['log_format'] == 'json':
-            format = '%(message)s'
+            log_format = '%(message)s'
         else:
-            format = '%(name)s[%(process)d]: %(message)s'
-        logging.basicConfig(format=format, level=Logger.getLogLevel(config))
+            log_format = '%(name)s[%(process)d]: %(message)s'
+        logging.basicConfig(format=log_format, level=Logger.get_log_level(config))
         return logging
 
     @staticmethod
-    def getLogLevel(config: dict[str, Any]) -> int:
+    def get_log_level(config: dict[str, Any]) -> int:
+        """Return the logging level based on the debug config key."""
         try:
             level = logging.DEBUG if config['debug'] == 1 else logging.INFO
         except KeyError:
@@ -176,50 +225,61 @@ class Logger():
         return level
 
     @staticmethod
-    def getLogPrivacyMode(config: dict[str, Any]) -> bool:
+    def get_log_privacy_mode(config: dict[str, Any]) -> bool:
+        """Return True if log_privacy_mode is enabled."""
         try:
             return config['log_privacy_mode'] == 1
         except KeyError:
             return True
 
 
-# noinspection PyUnresolvedReferences
-class Cfg(object):
-    """Helper class for some configuration parameters
-    """
+class Cfg:
+    """Helper class for loading and validating configuration."""
+
     config: dict[str, Any] | None = None
     logging: Any = None
 
     @staticmethod
-    def find_and_parse_config_file(configParam: str) -> dict[str, Any]:
+    def find_and_parse_config_file(config_param: str) -> dict[str, Any]:
+        """Locate, read, and parse the YAML config file; exit on error."""
         yaml_data_file = None
 
-        if configParam:
+        if config_param:
             try:
-                yaml_data_file = open(configParam)
+                yaml_data_file = open(config_param, encoding='utf-8')  # noqa: WPS515
             except IOError:
-                print('FATAL: config.yaml not found in '+configParam+'! Exiting...')
+                print('FATAL: config.yaml not found in ' + config_param + '! Exiting...')
                 sys.exit(1)
         else:
             try:
-                yaml_data_file = open('/etc/mailheadercheck/config.yaml')
+                yaml_data_file = open(  # noqa: WPS515
+                    '/etc/mailheadercheck/config.yaml', encoding='utf-8'
+                )
             except IOError:
                 try:
-                    yaml_data_file = open('./config.yaml')
+                    yaml_data_file = open('./config.yaml', encoding='utf-8')  # noqa: WPS515
                 except IOError:
-                    print('FATAL: config.yaml not found in /etc/mailheadercheck/ or in the current folder! Exiting...')
+                    print(
+                        'FATAL: config.yaml not found in /etc/mailheadercheck/'
+                        ' or in the current folder! Exiting...'
+                    )
                     sys.exit(1)
 
         try:
             with yaml_data_file as f:
                 config = yaml.safe_load(f)
         except yaml.YAMLError as e:
-            print('FATAL: config.yaml could not be parsed. Error message: "'+str(e)+'". Exiting...')
+            print(
+                'FATAL: config.yaml could not be parsed.'
+                ' Error message: "' + str(e) + '". Exiting...'
+            )
             sys.exit(1)
         return config
 
     @staticmethod
     def validate_config(config: dict[str, Any], allowed_checks: set[str]) -> list[str]:
+        """Validate config dict; return list of error strings (empty = valid)."""
+        # pylint: disable=too-many-branches,too-many-statements,too-many-locals
         errors = []
 
         # log_target validation
@@ -248,7 +308,8 @@ class Cfg(object):
         if arh not in (0, 1, '0', '1'):
             errors.append(f"Invalid add_result_header value '{arh}'. Allowed: 0, 1")
 
-        # socket validation: allow 'inet:<port>@<host>', 'inet6:<port>@<host>', 'unix:<path>' or 'local:<path>'
+        # socket validation: allow 'inet:<port>@<host>', 'inet6:<port>@<host>',
+        # 'unix:<path>' or 'local:<path>'
         sock = config.get('socket', '')
         if isinstance(sock, str):
             if sock.startswith('inet:') or sock.startswith('inet6:'):
@@ -261,9 +322,10 @@ class Cfg(object):
                     port = int(port_str)
                     if port < 1 or port > 65535 or not host:
                         raise ValueError()
-                except Exception:
+                except (ValueError, AttributeError):
                     errors.append(
-                        f"Invalid socket format '{sock}'. Expected inet:<port>@<host>, inet6:<port>@<host>, unix:<path> or local:<path>"
+                        f"Invalid socket format '{sock}'. Expected inet:<port>@<host>,"
+                        " inet6:<port>@<host>, unix:<path> or local:<path>"
                     )
             elif sock.startswith('unix:') or sock.startswith('local:'):
                 if sock.startswith('unix:'):
@@ -271,10 +333,14 @@ class Cfg(object):
                 else:
                     path = sock[len('local:'):]
                 if not path:
-                    errors.append(f"Invalid socket format '{sock}'. Expected unix:<path> or local:<path>")
+                    errors.append(
+                        f"Invalid socket format '{sock}'."
+                        " Expected unix:<path> or local:<path>"
+                    )
             else:
                 errors.append(
-                    f"Invalid socket format '{sock}'. Expected inet:<port>@<host>, inet6:<port>@<host>, unix:<path> or local:<path>"
+                    f"Invalid socket format '{sock}'. Expected inet:<port>@<host>,"
+                    " inet6:<port>@<host>, unix:<path> or local:<path>"
                 )
         else:
             errors.append("Invalid socket value type. Expected string like 'inet:40000@localhost'")
@@ -306,7 +372,10 @@ class Cfg(object):
         # unknown check names/options
         for check_name, options in checks_cfg.items():
             if check_name not in allowed_checks:
-                msg = f"Unknown check '{check_name}' configured; known checks: {', '.join(sorted(allowed_checks))}"
+                msg = (
+                    f"Unknown check '{check_name}' configured;"
+                    f" known checks: {', '.join(sorted(allowed_checks))}"
+                )
                 errors.append(msg)
                 # Skip further option validation for unknown checks
                 continue
@@ -327,16 +396,22 @@ class Cfg(object):
 
             # simple type validations
             if 'dry_run' in options and options['dry_run'] not in (0, 1, '0', '1'):
-                errors.append(f"Invalid value for 'dry_run' in check '{check_name}': {options['dry_run']}")
+                errors.append(
+                    f"Invalid value for 'dry_run' in check '{check_name}': {options['dry_run']}"
+                )
             if 'enabled' in options and options['enabled'] not in (0, 1, '0', '1'):
-                errors.append(f"Invalid value for 'enabled' in check '{check_name}': {options['enabled']}")
+                errors.append(
+                    f"Invalid value for 'enabled' in check '{check_name}': {options['enabled']}"
+                )
             if check_name == 'long_subject_header' and 'max_length' in options:
                 try:
                     ml = int(options['max_length'])
                     if ml < 1:
                         raise ValueError()
-                except Exception:
-                    errors.append("'max_length' in 'long_subject_header' must be a positive integer")
+                except (ValueError, TypeError):
+                    errors.append(
+                        "'max_length' in 'long_subject_header' must be a positive integer"
+                    )
 
         # metrics section validation
         metrics_cfg = config.get('metrics')
@@ -360,13 +435,15 @@ class Cfg(object):
                         raise ValueError()
                 except (ValueError, TypeError):
                     errors.append(
-                        f"Invalid metrics.port value '{mp}'. Must be an integer between 1 and 65535"
+                        f"Invalid metrics.port value '{mp}'."
+                        " Must be an integer between 1 and 65535"
                     )
 
                 ma = metrics_cfg.get('address', '127.0.0.1')
                 if not isinstance(ma, str) or not ma:
                     errors.append(
-                        f"Invalid metrics.address value '{ma}'. Must be a non-empty string"
+                        f"Invalid metrics.address value '{ma}'."
+                        " Must be a non-empty string"
                     )
 
         return errors

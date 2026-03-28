@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""mailheadercheck - Postfix milter for RFC/BCP email header validation."""
 
 import argparse
 import signal
@@ -28,10 +29,15 @@ __copyright__ = "Copyright (C) by AUTHORS"
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(epilog=NAME)
 
-    parser.add_argument("--config", "-c",
-                        type=str,
-                        default="",
-                        help="Path to config file. If not provided, the following order will be tested: /etc/mailheadercheck/config.yaml, ./config.yaml")
+    parser.add_argument(
+        "--config", "-c",
+        type=str,
+        default="",
+        help=(
+            "Path to config file. If not provided, the following order will be"
+            " tested: /etc/mailheadercheck/config.yaml, ./config.yaml"
+        )
+    )
     parser.add_argument("--configcheck",
                         action="store_true",
                         help="Validate the configuration file and exit (does not start the milter)")
@@ -61,18 +67,18 @@ if __name__ == "__main__":
     if errors:
         sys.exit(1)
 
-    """ init logger """
+    # init logger
     if config['log_target'] == 'syslog':
-        logging = Logger.getSyslogLogger(config)
+        logging = Logger.get_syslog_logger(config)
     elif config['log_target'] == 'file':
-        logging = Logger.getFileLogger(config)
+        logging = Logger.get_file_logger(config)
     elif config['log_target'] == 'stdout':
-        logging = Logger.getStdoutLogger(config)
+        logging = Logger.get_stdout_logger(config)
     else:
         # Fallback to stdout if log_target is misconfigured
-        logging = Logger.getStdoutLogger(config)
+        logging = Logger.get_stdout_logger(config)
 
-    logging.info("{0}-{1} milter startup".format(NAME, VERSION))
+    logging.info("%s-%s milter startup", NAME, VERSION)
 
     Cfg.config = config
     Cfg.logging = logging
@@ -86,23 +92,27 @@ if __name__ == "__main__":
 
     config_path = params.config
 
-    def handle_sighup(signum: int, frame: object) -> None:
-        logging.info(f"{NAME}: SIGHUP received, reloading config")
+    def handle_sighup(_signum: int, _frame: object) -> None:
+        """Handle SIGHUP by reloading the config file."""
+        logging.info("%s: SIGHUP received, reloading config", NAME)
         try:
             new_config = Cfg.find_and_parse_config_file(config_path)
         except SystemExit:
-            logging.error(f"{NAME}: Config reload aborted: could not read config file")
+            logging.error("%s: Config reload aborted: could not read config file", NAME)
             record_config_reload(False)
             return
-        errors = Cfg.validate_config(new_config, allowed_checks)
-        if errors:
-            for err in errors:
-                logging.error(f"{NAME}: Config reload failed: {err}")
-            logging.error(f"{NAME}: Config NOT reloaded — fix the errors above and send SIGHUP again")
+        new_errors = Cfg.validate_config(new_config, allowed_checks)
+        if new_errors:
+            for err in new_errors:
+                logging.error("%s: Config reload failed: %s", NAME, err)
+            logging.error(
+                "%s: Config NOT reloaded — fix errors above and send SIGHUP again",
+                NAME
+            )
             record_config_reload(False)
             return
         Cfg.config = new_config
-        logging.info(f"{NAME}: Config reloaded successfully")
+        logging.info("%s: Config reloaded successfully", NAME)
         record_config_reload(True)
 
     signal.signal(signal.SIGHUP, handle_sighup)
