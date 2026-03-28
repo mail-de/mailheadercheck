@@ -126,12 +126,14 @@ One summary line is written per message (at INFO level). Examples for
 both formats — first an accepted message, then a rejected one:
 
 **plain** (`log_format: plain`):
+
 ```
 mailheadercheck[1234]: connection_id=A1B2C3D4E5F6 queue_id=3xHt2f001234 client_ip="192.0.2.10" sasl_username="" envelope_from="<sender@example.com>" header_from="Sender Name <sender@example.com>" header_subject="Hello world" header_date="Wed, 23 Jun 2021 16:30:55 +0200" error_response_text="" result=accept actiontaken=accept dry_run=no
 mailheadercheck[1234]: connection_id=A1B2C3D4E5F6 queue_id=3xHt2f001235 client_ip="192.0.2.10" sasl_username="" envelope_from="<sender@example.com>" header_from="missing-from-header" header_subject="Hello world" header_date="Wed, 23 Jun 2021 16:30:55 +0200" error_response_text="Missing From:-Header" result=reject actiontaken=reject dry_run=no
 ```
 
 **json** (`log_format: json`):
+
 ```json
 {"connection_id": "A1B2C3D4E5F6", "queue_id": "3xHt2f001234", "client_ip": "192.0.2.10", "sasl_username": null, "envelope_from": "<sender@example.com>", "header_from": "Sender Name <sender@example.com>", "header_subject": "Hello world", "header_date": "Wed, 23 Jun 2021 16:30:55 +0200", "error_response_text": "", "result": "accept", "actiontaken": "accept", "dry_run": "no"}
 {"connection_id": "A1B2C3D4E5F6", "queue_id": "3xHt2f001235", "client_ip": "192.0.2.10", "sasl_username": null, "envelope_from": "<sender@example.com>", "header_from": "missing-from-header", "header_subject": "Hello world", "header_date": "Wed, 23 Jun 2021 16:30:55 +0200", "error_response_text": "Missing From:-Header", "result": "reject", "actiontaken": "reject", "dry_run": "no"}

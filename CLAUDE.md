@@ -27,6 +27,7 @@ miltertest -s tests/test-01.lua
 ```
 
 The `testing.sh` script runs two suites:
+
 1. **Config syntax checks** — validates YAML configs in `tests/config_syntax/` using `--configcheck`. Each file has a `# result: valid|invalid` comment.
 2. **Functional milter tests** — runs each `tests/test-*.lua` file via `miltertest`.
 
