@@ -14,6 +14,7 @@ v2026.1: 2026-03-28
                    mailheadercheck_active_connections (gauge),
                    mailheadercheck_exclusions_total (labels: check_name, exclusion_type),
                    mailheadercheck_info (gauge, version label)
+    Chore: Added Grafana dashboard (grafana/dashboard.json) covering all Prometheus metrics
 
 v2025.2: 2025-11-03
     Fix: Typo in config parse error message
