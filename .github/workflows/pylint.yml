@@ -31,7 +31,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install pylint
 
-      - name: Lint Python sources (allow import errors; do not fail build yet)
+      - name: Lint Python sources
         shell: bash
         run: |
           set -e
@@ -39,8 +39,8 @@ jobs:
           if [ -n "$FILES" ]; then
             echo "Running pylint on:"
             echo "$FILES" | tr '\n' ' '
-            # Disable import-error to avoid requiring C deps in the lint job, and avoid failing the workflow for now
-            pylint --disable=import-error --fail-under=0 $FILES || true
+            # Disable import-error to avoid requiring C deps (pymilter) in the lint job
+            pylint --disable=import-error $FILES
           else
             echo "No Python files found to lint."
           fi
