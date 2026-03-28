@@ -15,6 +15,7 @@ RUN    apt-get -y update \
     && apt-get -y install --no-install-recommends \
          miltertest \
          python3-milter \
+         python3-prometheus-client \
          python3-yaml \
     && rm -rf /var/lib/apt/lists/* \
     # explicit set permissions
@@ -36,6 +37,7 @@ COPY --from=builder /app/ /app/
 RUN    apt-get -y update \
     && apt-get -y install --no-install-recommends \
          python3-milter \
+         python3-prometheus-client \
          python3-yaml \
     && rm -rf /var/lib/apt/lists/*
          

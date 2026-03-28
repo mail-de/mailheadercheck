@@ -21,6 +21,13 @@ socket: inet:30073@0.0.0.0
 # Set to 0 to enforce rejections after you validated the behavior
 dry_run: 1
 
+# Prometheus/OpenMetrics scrape endpoint
+# Binds to 0.0.0.0 so the published port is reachable from the host
+metrics:
+    enabled: 1
+    port: 9182
+    address: "0.0.0.0"
+
 checks:
     missing_from_header:
         dry_run: 0
