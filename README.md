@@ -165,6 +165,30 @@ The "socket" setting can have one of the following formats:
 * unix:/path/to/socket
 * local:/path/to/socket
 
+### Reloading configuration without restart (SIGHUP)
+
+Sending `SIGHUP` to the milter process causes it to re-read and apply
+the configuration file without stopping the milter:
+
+```sh
+kill -HUP $(pidof mailheadercheck)
+```
+
+For systemd, add `ExecReload=/bin/kill -HUP $MAINPID` to the service
+unit and then reload with:
+
+```sh
+sudo systemctl reload mailheadercheck
+```
+
+**What is reloaded:** per-check options (`dry_run`, `enabled`, exclusion
+lists) and any other settings read from config on a per-message basis.
+
+**What requires a full restart:** `log_target`, `log_format`, `socket`,
+`syslog_name`, `syslog_facility`, and `log_filepath`. These are applied
+once at startup. If validation of the reloaded config fails, the old
+config remains active and the errors are logged.
+
 ### add_result_header
 
 Setting "add_result_header" to 1 will add a header to the email with
