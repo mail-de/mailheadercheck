@@ -174,8 +174,8 @@ the configuration file without stopping the milter:
 kill -HUP $(pidof mailheadercheck)
 ```
 
-For systemd, add `ExecReload=/bin/kill -HUP $MAINPID` to the service
-unit and then reload with:
+For systemd, the provided unit file (`contrib/systemd/mailheadercheck.service`)
+already includes `ExecReload`, so you can reload with:
 
 ```sh
 sudo systemctl reload mailheadercheck
