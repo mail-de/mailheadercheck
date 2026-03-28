@@ -9,6 +9,7 @@ import sys
 import yaml
 
 class CheckUtils():
+    @staticmethod
     def domain_found_in_exclude_list(config: dict[str, Any], headers: dict[str, str], envelopeFrom: str, checkName: str) -> bool:
 
         """ check exclude_envelopefrom_domains """
@@ -46,6 +47,7 @@ class CheckUtils():
 
         return False
 
+    @staticmethod
     def envelopefrom_found_in_exclude_list(config: dict[str, Any], envelopeFrom: str, checkName: str) -> bool:
         """ check exclude_envelopefrom_addresses (full addresses) """
         try:
@@ -59,6 +61,7 @@ class CheckUtils():
             pass
         return False
 
+    @staticmethod
     def fromheader_found_in_exclude_list(config: dict[str, Any], headers: dict[str, str], checkName: str) -> bool:
         """ check exclude_fromheader_addresses (full addresses from From: header) """
         if 'from' not in headers:
@@ -75,6 +78,7 @@ class CheckUtils():
             pass
         return False
 
+    @staticmethod
     def sasl_found_in_exclude_list(config: dict[str, Any], sasl_username: str | None, checkName: str) -> bool:
         """ check exclude_sasl_usernames """
         if not sasl_username:
@@ -89,6 +93,7 @@ class CheckUtils():
             pass
         return False
 
+    @staticmethod
     def ip_found_in_exclude_ip_list(config: dict[str, Any], ip: str, checkName: str) -> bool:
 
         """ check if exclude_ips has been configured for this check """
@@ -104,6 +109,7 @@ class CheckUtils():
 
         return False
 
+    @staticmethod
     def single_check_dry_run_active(config: dict[str, Any], checkName: str) -> bool:
         try:
             action_value = config['checks'][checkName]['dry_run']
@@ -116,6 +122,7 @@ class CheckUtils():
             return True
         return False
 
+    @staticmethod
     def check_is_enabled(config: dict[str, Any], checkName: str) -> bool:
         try:
             enabled_value = config['checks'][checkName]['enabled']
@@ -129,6 +136,7 @@ class CheckUtils():
         return True
 
 class Logger():
+    @staticmethod
     def getSyslogLogger(config: dict[str, Any]) -> logging.Logger:
         log = logging.getLogger(config['syslog_name'])
         log.setLevel(Logger.getLogLevel(config))
@@ -141,6 +149,7 @@ class Logger():
         log.addHandler(handler)
         return log
 
+    @staticmethod
     def getFileLogger(config: dict[str, Any]) -> Any:
         if config['log_format'] == 'json':
             format = '%(message)s'
@@ -149,6 +158,7 @@ class Logger():
         logging.basicConfig(format=format, filename=config['log_filepath'], level=Logger.getLogLevel(config))
         return logging
 
+    @staticmethod
     def getStdoutLogger(config: dict[str, Any]) -> Any:
         if config['log_format'] == 'json':
             format = '%(message)s'
@@ -157,6 +167,7 @@ class Logger():
         logging.basicConfig(format=format, level=Logger.getLogLevel(config))
         return logging
 
+    @staticmethod
     def getLogLevel(config: dict[str, Any]) -> int:
         try:
             level = logging.DEBUG if config['debug'] == 1 else logging.INFO
@@ -164,6 +175,7 @@ class Logger():
             level = logging.INFO
         return level
 
+    @staticmethod
     def getLogPrivacyMode(config: dict[str, Any]) -> bool:
         try:
             return config['log_privacy_mode'] == 1
@@ -178,6 +190,7 @@ class Cfg(object):
     config: dict[str, Any] | None = None
     logging: Any = None
 
+    @staticmethod
     def find_and_parse_config_file(configParam: str) -> dict[str, Any]:
         yaml_data_file = None
 
