@@ -6,6 +6,7 @@ import sys
 import Milter
 from mailheaderchecklib.utility import Logger, Cfg
 from mailheaderchecklib.mailheadercheckmilter import MailHeaderCheckMilter
+from mailheaderchecklib.checks import CHECKS
 
 NAME = "mailheadercheck"
 VERSION = "2025.2"
@@ -39,7 +40,7 @@ if __name__ == "__main__":
     config = Cfg.find_and_parse_config_file(params.config)
 
     # Run config validation before starting the milter
-    allowed_checks = set(MailHeaderCheckMilter.allChecks.keys())
+    allowed_checks = {check.name for check in CHECKS}
     if params.configcheck:
         errors = Cfg.validate_config(config, allowed_checks)
         for e in errors:

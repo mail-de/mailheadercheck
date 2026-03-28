@@ -51,13 +51,14 @@ docker compose run --rm mailheadercheck --config /config/config.yaml --configche
 ```
 mailheadercheck            # Entry point (executable Python script)
 mailheaderchecklib/
+  checks.py                # Check dataclass, CheckFn type alias, all check functions, CHECKS registry
   mailheadercheckmilter.py # Milter class (MailHeaderCheckMilter extends Milter.Base)
-  utility.py               # CheckUtils, CheckRunner, Logger, Cfg
+  utility.py               # CheckUtils, Logger, Cfg
 ```
 
 **Flow:** `mailheadercheck` (entry point) → reads and validates config via `Cfg` → sets up logger via `Logger` → registers `MailHeaderCheckMilter` with pymilter → milter callbacks: `connect()`, `envfrom()`, `header()`, `eom()`.
 
-**Checks are defined** as a dict `allChecks` in `MailHeaderCheckMilter`. Each entry maps a check name (e.g. `missing_from_header`) to a `CheckRunner` wrapping a lambda. All check logic runs in `eom()`.
+**Checks are defined** in `checks.py` as `Check` dataclass instances (`name`, `niceName`, `fn`) collected in the `CHECKS: list[Check]` registry. To add a new check, only `checks.py` needs to be edited: write a `_check_*` function and add a `Check(...)` entry to `CHECKS`. All check logic runs in `eom()` which iterates `CHECKS`.
 
 **Per-check options** (under `checks.<check_name>`): `enabled` (0/1, default 1 — if 0, check is skipped entirely before any other processing), `dry_run` (0/1), and exclusion lists: `exclude_fromheader_domains`, `exclude_fromheader_addresses`, `exclude_envelopefrom_domains`, `exclude_envelopefrom_addresses`, `exclude_ips`, `exclude_sasl_usernames`. In `eom()`, `enabled` is checked first, then exclusion lists, then the check function itself.
 

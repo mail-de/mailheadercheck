@@ -5,88 +5,14 @@ import Milter
 import json
 import random
 import string
-from mailheaderchecklib.utility import CheckRunner, CheckUtils, Logger, Cfg
+from mailheaderchecklib.utility import CheckUtils, Logger, Cfg
+from mailheaderchecklib.checks import CHECKS
 
 # noinspection PyIncorrectDocstring,PyUnresolvedReferences
 class MailHeaderCheckMilter(Milter.Base):
     """
     Milter that verifies RFC/BCP validity of some headers (Date, Subject, From, Message-ID, ...)
     """
-
-    allChecks: dict[str, dict[str, Any]] = {
-        'missing_from_header': {
-            'niceName': "Missing From:-Header",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'from') == 0)
-        },
-        'multiple_from_headers': {
-            'niceName': "Multiple From:-Headers",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'from') > 1)
-        },
-        'empty_from_header': {
-            'niceName': "Empty From:-Header",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'from') == 1 and len(headers['from'].strip()) == 0)
-        },
-        'not_exactly_one_address_in_from_header': {
-            'niceName': "Not exactly one address in From:-Header",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'from') == 1 and len(headers['from'].strip()) > 0 and CheckUtils.not_exactly_one_address_in_from_header(config, headers))
-        },
-        'multiple_subject_headers': {
-            'niceName': "Multiple Subject:-Headers",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'subject') > 1)
-        },
-        'long_subject_header': {
-            'niceName': "Subject:-Header too long",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'subject') == 1 and CheckUtils.is_subject_too_long(config, headers))
-        },
-        'missing_date_header': {
-            'niceName': "Missing Date:-Header",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'date') == 0)
-        },
-        'multiple_date_headers': {
-            'niceName': "Multiple Date:-Headers",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'date') > 1)
-        },
-        'empty_date_header': {
-            'niceName': "Empty Date:-Header",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'date') == 1 and len(headers['date'].strip()) == 0)
-        },
-        'invalid_date_header': {
-            'niceName': "Invalid Date:-Header",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'date') == 1 and CheckUtils.is_date_invalid(config, headers))
-        },
-        'multiple_sender_headers': {
-            'niceName': "Multiple Sender:-Headers",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'sender') > 1)
-        },
-        'multiple_replyto_headers': {
-            'niceName': "Multiple Reply-To:-Headers",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'reply-to') > 1)
-        },
-        'multiple_to_headers': {
-            'niceName': "Multiple To:-Headers",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'to') > 1)
-        },
-        'multiple_cc_headers': {
-            'niceName': "Multiple Cc:-Headers",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'cc') > 1)
-        },
-        'missing_messageid_header': {
-            'niceName': "Missing Message-ID:-Header",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'message-id') == 0)
-        },
-        'multiple_messageid_headers': {
-            'niceName': "Multiple Message-ID:-Headers",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'message-id') > 1)
-        },
-        'multiple_inreplyto_headers': {
-            'niceName': "Multiple In-Reply-To:-Header",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'in-reply-to') > 1)
-        },
-        'multiple_references_headers': {
-            'niceName': "Multiple References:-Headers",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'references') > 1)
-        },
-    }
 
     def initializeHeaderCounter(self) -> None:
         self.__headerCounter = {
@@ -170,45 +96,45 @@ class MailHeaderCheckMilter(Milter.Base):
         actiontaken = 'accept'
         failedChecks = []
 
-        for checkName, oneCheck in self.allChecks.items():
-            if not CheckUtils.check_is_enabled(self.__config, checkName):
-                self.__logging.debug(self.__connectionId+' Check "'+checkName+'" is disabled (enabled=0), skipping')
+        for check in CHECKS:
+            if not CheckUtils.check_is_enabled(self.__config, check.name):
+                self.__logging.debug(self.__connectionId+' Check "'+check.name+'" is disabled (enabled=0), skipping')
                 continue
 
-            self.__logging.debug(self.__connectionId+' Running check: ' + oneCheck['niceName'] + '('+checkName+')')
+            self.__logging.debug(self.__connectionId+' Running check: ' + check.niceName + '('+check.name+')')
 
-            self.__logging.debug(self.__connectionId+' Check if the SASL username is on exclude_sasl_usernames list of check "'+checkName+'"')
-            if CheckUtils.sasl_found_in_exclude_list(self.__config, self.__sasl_username, checkName):
+            self.__logging.debug(self.__connectionId+' Check if the SASL username is on exclude_sasl_usernames list of check "'+check.name+'"')
+            if CheckUtils.sasl_found_in_exclude_list(self.__config, self.__sasl_username, check.name):
                 self.__logging.debug(self.__connectionId+' SASL username in exclude list found, skipping this check...')
                 continue
 
-            self.__logging.debug(self.__connectionId+' Check if the sender address is on exclude_envelopefrom_addresses list of check "'+checkName+'"')
-            if CheckUtils.envelopefrom_found_in_exclude_list(self.__config, self.__envelopeFrom, checkName):
+            self.__logging.debug(self.__connectionId+' Check if the sender address is on exclude_envelopefrom_addresses list of check "'+check.name+'"')
+            if CheckUtils.envelopefrom_found_in_exclude_list(self.__config, self.__envelopeFrom, check.name):
                 self.__logging.debug(self.__connectionId+' Envelope-From in exclude list found, skipping this check...')
                 continue
 
-            self.__logging.debug(self.__connectionId+' Check if the From: header address is on exclude_fromheader_addresses list of check "'+checkName+'"')
-            if CheckUtils.fromheader_found_in_exclude_list(self.__config, self.__headers, checkName):
+            self.__logging.debug(self.__connectionId+' Check if the From: header address is on exclude_fromheader_addresses list of check "'+check.name+'"')
+            if CheckUtils.fromheader_found_in_exclude_list(self.__config, self.__headers, check.name):
                 self.__logging.debug(self.__connectionId+' From header address in exclude list found, skipping this check...')
                 continue
 
-            self.__logging.debug(self.__connectionId+' Check if the sender domain is on exclude domain list of check "'+checkName+'"')
-            if CheckUtils.domain_found_in_exclude_list(self.__config, self.__headers, self.__envelopeFrom, checkName):
+            self.__logging.debug(self.__connectionId+' Check if the sender domain is on exclude domain list of check "'+check.name+'"')
+            if CheckUtils.domain_found_in_exclude_list(self.__config, self.__headers, self.__envelopeFrom, check.name):
                 self.__logging.debug(self.__connectionId+' Domain in one of the exclude domain lists found, skipping this check...')
                 continue
 
-            self.__logging.debug(self.__connectionId+' Check if the IP address is on exclude_ips list of check "'+checkName+'"')
-            if CheckUtils.ip_found_in_exclude_ip_list(self.__config, self.__ip, checkName):
+            self.__logging.debug(self.__connectionId+' Check if the IP address is on exclude_ips list of check "'+check.name+'"')
+            if CheckUtils.ip_found_in_exclude_ip_list(self.__config, self.__ip, check.name):
                 self.__logging.debug(self.__connectionId+' IP in exclude_ip list found, skipping this check...')
                 continue
 
             self.__logging.debug(self.__connectionId+' Doing the check now...')
-            check_response = oneCheck['check'].isValid(self.__headers, self.__headerCounter, self.__config)
+            check_response = check.fn(self.__headers, self.__headerCounter, self.__config)
             self.__logging.debug(self.__connectionId+' Check result: ' + str(check_response))
             if check_response == True:
                 check_result = 'reject'
-                failedChecks.append(oneCheck['niceName'])
-                if CheckUtils.single_check_dry_run_active(self.__config, checkName):
+                failedChecks.append(check.niceName)
+                if CheckUtils.single_check_dry_run_active(self.__config, check.name):
                     self.__logging.debug(self.__connectionId+' This check returned a reject, BUT the check is marked as "dry_run=1". Proceeding with checks...')
                 elif self.__dry_run_active == False:
                     actiontaken = 'reject'

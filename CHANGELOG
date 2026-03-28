@@ -5,6 +5,7 @@ vNext:
     Fix: not_exactly_one_address_in_from_header now rejects From headers that contain a display name but no email address (no '@')
     Chore: Added requirements.txt; Python dependencies are no longer only documented in README prose
     Chore: Added type hints to all function signatures in mailheaderchecklib/
+    Refactor: Extracted all check logic into mailheaderchecklib/checks.py; adding a new check now requires editing only that one file
 
 v2025.2: 2025-11-03
     Fix: Typo in config parse error message

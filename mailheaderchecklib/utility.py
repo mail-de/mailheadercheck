@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Callable
-from email.utils import parsedate, getaddresses, parseaddr
+from email.utils import getaddresses
 from typing import Any
 import logging
 import logging.handlers
@@ -128,65 +127,6 @@ class CheckUtils():
         if str(enabled_value) == '0':   # We cast to str here, so users can use integers or strings in config.yaml
             return False
         return True
-
-    def not_exactly_one_address_in_from_header(config: dict[str, Any], headers: dict[str, str]) -> bool:
-        if 'from' not in headers:
-            return False
-
-        try:
-            all_emails = getaddresses([headers['from']])
-            all_emails = [x[1].lower() for x in all_emails if '@' in x[1]]
-            all_emails = set(all_emails)
-
-            if len(all_emails) != 1:  # While technically RFC conform, we do not allow multiple addresses in the From:-header
-                return True
-        except Exception:
-            # While parsing headers, there could be Exceptions.
-            # If an Exception is thrown, we don't want the Milter to crash. For now, we simply ACCEPT the email.
-            # Maybe in the future we block the email, because it's invalid/broken?
-            return False
-        return False
-
-    def is_date_invalid(config: dict[str, Any], headers: dict[str, str]) -> bool:
-        if 'date' not in headers:
-            return False
-
-        try:
-            if parsedate(headers['date']) == None:
-                return True
-        except Exception:
-            # While parsing headers, there could be Exceptions.
-            # If an Exception is thrown, we don't want the Milter to crash. For now, we simply ACCEPT the email.
-            # Maybe in the future we block the email, because it's invalid/broken?
-            return False
-        return False
-
-    def is_subject_too_long(config: dict[str, Any], headers: dict[str, str]) -> bool:
-        if 'subject' not in headers:
-            return False
-
-        try:
-            max_length = config['checks']['long_subject_header']['max_length']
-        except KeyError:
-            max_length = 5000
-        except TypeError:    #  TypeError: "'NoneType' object is not subscriptable". Happens if in yaml you don't configure empty dict, but Nothing/None
-            max_length = 5000
-
-        if len(headers['subject']) > max_length:
-            return True
-        return False
-
-    def get_number_of_headers(headerCounter: dict[str, int], headerName: str) -> int:
-        if headerName in headerCounter:
-            return headerCounter[headerName]
-        else:
-            return 0
-
-class CheckRunner():
-    def __init__(self, checkFunction: Callable[..., bool]) -> None:
-        self.checkFunction = checkFunction
-    def isValid(self, headers: dict[str, str], headerCounter: dict[str, int], config: dict[str, Any]) -> bool:
-       return self.checkFunction(headers, headerCounter, config)
 
 class Logger():
     def getSyslogLogger(config: dict[str, Any]) -> logging.Logger:
