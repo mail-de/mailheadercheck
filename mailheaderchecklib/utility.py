@@ -338,6 +338,37 @@ class Cfg(object):
                 except Exception:
                     errors.append("'max_length' in 'long_subject_header' must be a positive integer")
 
+        # metrics section validation
+        metrics_cfg = config.get('metrics')
+        if metrics_cfg is not None:
+            if not isinstance(metrics_cfg, dict):
+                errors.append("'metrics' must be a mapping/dictionary")
+            else:
+                allowed_metrics_keys = {'enabled', 'port', 'address'}
+                for key in metrics_cfg:
+                    if key not in allowed_metrics_keys:
+                        errors.append(f"Unknown key '{key}' in 'metrics' section")
+
+                me = metrics_cfg.get('enabled', 0)
+                if me not in (0, 1, '0', '1'):
+                    errors.append(f"Invalid metrics.enabled value '{me}'. Allowed: 0, 1")
+
+                mp = metrics_cfg.get('port', 9182)
+                try:
+                    port_int = int(mp)
+                    if port_int < 1 or port_int > 65535:
+                        raise ValueError()
+                except (ValueError, TypeError):
+                    errors.append(
+                        f"Invalid metrics.port value '{mp}'. Must be an integer between 1 and 65535"
+                    )
+
+                ma = metrics_cfg.get('address', '127.0.0.1')
+                if not isinstance(ma, str) or not ma:
+                    errors.append(
+                        f"Invalid metrics.address value '{ma}'. Must be a non-empty string"
+                    )
+
         return errors
 
 # vim: expandtab ts=4 sw=4

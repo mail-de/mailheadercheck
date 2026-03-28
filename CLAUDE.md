@@ -53,6 +53,7 @@ mailheadercheck            # Entry point (executable Python script)
 mailheaderchecklib/
   checks.py                # Check dataclass, CheckFn type alias, all check functions, CHECKS registry
   mailheadercheckmilter.py # Milter class (MailHeaderCheckMilter extends Milter.Base)
+  metrics.py               # Prometheus/OpenMetrics counters; no-ops when metrics are disabled
   utility.py               # CheckUtils, Logger, Cfg
 ```
 
@@ -64,9 +65,11 @@ mailheaderchecklib/
 
 **dry_run** can be set globally or per-check. If active, the check logs a would-be reject but continues and accepts the message. Default when not configured: dry_run is active.
 
-**Config validation** (`Cfg.validate_config`) is invoked when `--configcheck` is passed and also on every normal startup. It validates `log_target`, `log_format`, `debug`, `log_privacy_mode`, `add_result_header`, `socket` format, and all per-check option names and values.
+**Config validation** (`Cfg.validate_config`) is invoked when `--configcheck` is passed and also on every normal startup. It validates `log_target`, `log_format`, `debug`, `log_privacy_mode`, `add_result_header`, `socket` format, `metrics` section keys and values, and all per-check option names and values. `check_dependencies()` from `metrics.py` is also called in both paths to verify `prometheus_client` is installed when `metrics.enabled: 1`.
 
-**SIGHUP** reloads the config file at runtime (`kill -HUP $PID` or `systemctl reload`). Only per-message settings take effect immediately (check options, exclusion lists, dry_run, enabled). Settings applied at startup only (`log_target`, `log_format`, `socket`, syslog settings, `log_filepath`) require a full restart.
+**Metrics** (`mailheaderchecklib/metrics.py`) expose a Prometheus/OpenMetrics scrape endpoint when `metrics.enabled: 1`. The module uses a null-object pattern: `record_message()`, `record_check_violation()`, and `record_config_reload()` are always importable and callable, but are no-ops when metrics are disabled. `init_metrics()` is called from the entry point before `Milter.runmilter()`; it hard-exits if `prometheus_client` is not installed. `check_dependencies()` is called from both `--configcheck` and normal startup validation.
+
+**SIGHUP** reloads the config file at runtime (`kill -HUP $PID` or `systemctl reload`). Only per-message settings take effect immediately (check options, exclusion lists, dry_run, enabled). Settings applied at startup only (`log_target`, `log_format`, `socket`, syslog settings, `log_filepath`, and all `metrics:` settings) require a full restart.
 
 ## Test structure
 

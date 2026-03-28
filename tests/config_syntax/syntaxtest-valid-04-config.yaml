@@ -1,0 +1,13 @@
+# valid config with metrics section (disabled — syntax test only; enabled: 1 requires prometheus_client)
+# result: valid
+
+debug: 0
+log_target: stdout
+log_format: plain
+socket: inet:40000@localhost
+dry_run: 1
+
+metrics:
+    enabled: 0
+    port: 9182
+    address: "127.0.0.1"

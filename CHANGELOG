@@ -6,6 +6,14 @@ vNext:
     Chore: Added requirements.txt; Python dependencies are no longer only documented in README prose
     Chore: Added type hints to all function signatures in mailheaderchecklib/
     Refactor: Extracted all check logic into mailheaderchecklib/checks.py; adding a new check now requires editing only that one file
+    Feat: Optional Prometheus/OpenMetrics scrape endpoint (set metrics.enabled: 1; requires pip install prometheus_client)
+          Exposes: mailheadercheck_messages_total (labels: result, actiontaken, dry_run),
+                   mailheadercheck_check_violations_total (label: check_name),
+                   mailheadercheck_config_reloads_total (label: result),
+                   mailheadercheck_eom_duration_seconds (histogram),
+                   mailheadercheck_active_connections (gauge),
+                   mailheadercheck_exclusions_total (labels: check_name, exclusion_type),
+                   mailheadercheck_info (gauge, version label)
 
 v2025.2: 2025-11-03
     Fix: Typo in config parse error message

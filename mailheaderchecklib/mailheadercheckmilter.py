@@ -6,8 +6,13 @@ import Milter
 import json
 import random
 import string
+import time
 from mailheaderchecklib.utility import CheckUtils, Logger, Cfg
 from mailheaderchecklib.checks import CHECKS
+from mailheaderchecklib.metrics import (
+    record_message, record_check_violation, record_eom_duration,
+    record_connection_opened, record_connection_closed, record_exclusion_hit,
+)
 
 
 @dataclass
@@ -52,6 +57,11 @@ class MailHeaderCheckMilter(Milter.Base):
         self.__ip = hostaddr[0]
         port = hostaddr[1]
         self.__logging.debug(self.__connection_id + ' Connection received: Hostname="' + ipname + '" IP="' + self.__ip + '" Port=' + str(port))
+        record_connection_opened()
+        return Milter.CONTINUE
+
+    def close(self) -> int:
+        record_connection_closed()
         return Milter.CONTINUE
 
     @Milter.noreply
@@ -78,6 +88,7 @@ class MailHeaderCheckMilter(Milter.Base):
     def eom(self) -> int:
         """ end of message. Gets called after end of the message body """
 
+        eom_start = time.perf_counter()
         check_result = 'accept'
         actiontaken = 'accept'
         failedChecks = []
@@ -92,26 +103,31 @@ class MailHeaderCheckMilter(Milter.Base):
             self.__logging.debug(self.__connection_id+' Check if the SASL username is on exclude_sasl_usernames list of check "'+check.name+'"')
             if CheckUtils.sasl_found_in_exclude_list(self.__config, self.__msg.sasl_username, check.name):
                 self.__logging.debug(self.__connection_id+' SASL username in exclude list found, skipping this check...')
+                record_exclusion_hit(check.name, 'sasl')
                 continue
 
             self.__logging.debug(self.__connection_id+' Check if the sender address is on exclude_envelopefrom_addresses list of check "'+check.name+'"')
             if CheckUtils.envelopefrom_found_in_exclude_list(self.__config, self.__msg.envelope_from, check.name):
                 self.__logging.debug(self.__connection_id+' Envelope-From in exclude list found, skipping this check...')
+                record_exclusion_hit(check.name, 'envelopefrom')
                 continue
 
             self.__logging.debug(self.__connection_id+' Check if the From: header address is on exclude_fromheader_addresses list of check "'+check.name+'"')
             if CheckUtils.fromheader_found_in_exclude_list(self.__config, self.__msg.headers, check.name):
                 self.__logging.debug(self.__connection_id+' From header address in exclude list found, skipping this check...')
+                record_exclusion_hit(check.name, 'fromheader')
                 continue
 
             self.__logging.debug(self.__connection_id+' Check if the sender domain is on exclude domain list of check "'+check.name+'"')
             if CheckUtils.domain_found_in_exclude_list(self.__config, self.__msg.headers, self.__msg.envelope_from, check.name):
                 self.__logging.debug(self.__connection_id+' Domain in one of the exclude domain lists found, skipping this check...')
+                record_exclusion_hit(check.name, 'domain')
                 continue
 
             self.__logging.debug(self.__connection_id+' Check if the IP address is on exclude_ips list of check "'+check.name+'"')
             if CheckUtils.ip_found_in_exclude_ip_list(self.__config, self.__ip, check.name):
                 self.__logging.debug(self.__connection_id+' IP in exclude_ip list found, skipping this check...')
+                record_exclusion_hit(check.name, 'ip')
                 continue
 
             self.__logging.debug(self.__connection_id+' Doing the check now...')
@@ -120,6 +136,7 @@ class MailHeaderCheckMilter(Milter.Base):
             if check_response == True:
                 check_result = 'reject'
                 failedChecks.append(check.niceName)
+                record_check_violation(check.name)
                 if CheckUtils.single_check_dry_run_active(self.__config, check.name):
                     self.__logging.debug(self.__connection_id+' This check returned a reject, BUT the check is marked as "dry_run=1". Proceeding with checks...')
                 elif self.__dry_run_active == False:
@@ -130,6 +147,8 @@ class MailHeaderCheckMilter(Milter.Base):
                     self.__logging.debug(self.__connection_id+' This check returned a reject, BUT global dry-run is active. Proceeding with checks...')
 
         failedCheckStr = ', '.join(failedChecks)
+        record_eom_duration(time.perf_counter() - eom_start)
+        record_message(check_result, actiontaken, self.__dry_run_active)
 
         if actiontaken == 'reject':
             self.setreply("554", xcode="5.7.0", msg="Header violation: " + failedChecks[-1])

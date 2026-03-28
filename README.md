@@ -165,6 +165,51 @@ The "socket" setting can have one of the following formats:
 * unix:/path/to/socket
 * local:/path/to/socket
 
+### metrics
+
+An optional Prometheus/OpenMetrics-compatible scrape endpoint can be enabled.
+It requires the `prometheus_client` Python package:
+
+```sh
+pip install prometheus_client
+```
+
+Enable and configure it in `config.yaml`:
+
+```yaml
+metrics:
+  enabled: 1            # 0 = disabled (default)
+  port: 9182            # TCP port for the /metrics endpoint
+  address: "127.0.0.1"  # bind address; use "0.0.0.0" to allow remote scraping
+```
+
+These settings are **startup-only** — changing them requires a full milter restart
+(same behaviour as `socket` and `log_target`).
+
+When enabled, the following metrics are exposed at `http://<address>:<port>/metrics`:
+
+| Metric | Type | Labels |
+|---|---|---|
+| `mailheadercheck_messages_total` | Counter | `result`, `actiontaken`, `dry_run` |
+| `mailheadercheck_check_violations_total` | Counter | `check_name` |
+| `mailheadercheck_exclusions_total` | Counter | `check_name`, `exclusion_type` |
+| `mailheadercheck_config_reloads_total` | Counter | `result` (`success`/`failure`) |
+| `mailheadercheck_eom_duration_seconds` | Histogram | — |
+| `mailheadercheck_active_connections` | Gauge | — |
+| `mailheadercheck_info` | Gauge (=1) | `version` |
+
+The endpoint supports both the standard Prometheus text format and the OpenMetrics
+format (via HTTP content negotiation).
+
+Example Prometheus scrape configuration:
+
+```yaml
+scrape_configs:
+  - job_name: 'mailheadercheck'
+    static_configs:
+      - targets: ['localhost:9182']
+```
+
 ### Reloading configuration without restart (SIGHUP)
 
 Sending `SIGHUP` to the milter process causes it to re-read and apply
@@ -185,9 +230,10 @@ sudo systemctl reload mailheadercheck
 lists) and any other settings read from config on a per-message basis.
 
 **What requires a full restart:** `log_target`, `log_format`, `socket`,
-`syslog_name`, `syslog_facility`, and `log_filepath`. These are applied
-once at startup. If validation of the reloaded config fails, the old
-config remains active and the errors are logged.
+`syslog_name`, `syslog_facility`, `log_filepath`, and all `metrics:` settings
+(`enabled`, `port`, `address`). These are applied once at startup. If
+validation of the reloaded config fails, the old config remains active and
+the errors are logged.
 
 ### add_result_header
 

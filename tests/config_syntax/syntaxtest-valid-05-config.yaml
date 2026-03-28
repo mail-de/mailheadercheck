@@ -1,0 +1,11 @@
+# valid config with minimal metrics section (port and address use defaults)
+# result: valid
+
+debug: 0
+log_target: stdout
+log_format: plain
+socket: inet:40000@localhost
+dry_run: 1
+
+metrics:
+    enabled: 0
