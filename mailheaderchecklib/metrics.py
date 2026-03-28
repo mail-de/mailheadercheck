@@ -28,7 +28,7 @@ def check_dependencies(config: dict[str, Any]) -> list[str]:
     except ImportError:
         return [
             "metrics.enabled: 1 requires 'prometheus_client' "
-            "(pip install prometheus_client)"
+            "(pip install prometheus_client  or  apt install python3-prometheus-client)"
         ]
 
 
@@ -57,7 +57,7 @@ def init_metrics(config: dict[str, Any], logging: Any, version: str = 'unknown')
     except ImportError:
         print(
             "FATAL: metrics.enabled: 1 requires 'prometheus_client'. "
-            "Install it with: pip install prometheus_client"
+            "Install it with: pip install prometheus_client  or  apt install python3-prometheus-client"
         )
         sys.exit(1)
 

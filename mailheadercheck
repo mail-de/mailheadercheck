@@ -10,7 +10,7 @@ from mailheaderchecklib.checks import CHECKS
 from mailheaderchecklib.metrics import init_metrics, record_config_reload, check_dependencies
 
 NAME = "mailheadercheck"
-VERSION = "2025.2"
+VERSION = "2026.1"
 
 try:
     # noinspection PyUnresolvedReferences

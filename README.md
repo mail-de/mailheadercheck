@@ -170,10 +170,12 @@ The "socket" setting can have one of the following formats:
 ### metrics
 
 An optional Prometheus/OpenMetrics-compatible scrape endpoint can be enabled.
-It requires the `prometheus_client` Python package:
+It requires the `prometheus_client` Python package (install via pip or your distro's package manager):
 
 ```sh
 pip install prometheus_client
+# or on Debian/Ubuntu:
+sudo apt install python3-prometheus-client
 ```
 
 Enable and configure it in `config.yaml`:

@@ -19,7 +19,7 @@ socket: inet:30073@127.0.0.1
 dry_run: 1
 
 # Prometheus/OpenMetrics scrape endpoint (optional)
-# Requires: pip install prometheus_client
+# Requires: pip install prometheus_client  (or: apt install python3-prometheus-client)
 # These settings are startup-only (changing them requires a full restart, like 'socket').
 metrics:
     enabled: 0            # set to 1 to enable; default: disabled
