@@ -1,4 +1,8 @@
+from __future__ import annotations
+
+from collections.abc import Callable
 from email.utils import parsedate, getaddresses, parseaddr
+from typing import Any
 import logging
 import logging.handlers
 import ipaddress
@@ -6,7 +10,7 @@ import sys
 import yaml
 
 class CheckUtils():
-    def domain_found_in_exclude_list(config, headers, envelopeFrom, checkName):
+    def domain_found_in_exclude_list(config: dict[str, Any], headers: dict[str, str], envelopeFrom: str, checkName: str) -> bool:
 
         """ check exclude_envelopefrom_domains """
         try:
@@ -43,7 +47,7 @@ class CheckUtils():
 
         return False
 
-    def envelopefrom_found_in_exclude_list(config, envelopeFrom, checkName):
+    def envelopefrom_found_in_exclude_list(config: dict[str, Any], envelopeFrom: str, checkName: str) -> bool:
         """ check exclude_envelopefrom_addresses (full addresses) """
         try:
             exclude_envelopefrom_addresses = [addr.lower() for addr in config['checks'][checkName]['exclude_envelopefrom_addresses']]
@@ -56,7 +60,7 @@ class CheckUtils():
             pass
         return False
 
-    def fromheader_found_in_exclude_list(config, headers, checkName):
+    def fromheader_found_in_exclude_list(config: dict[str, Any], headers: dict[str, str], checkName: str) -> bool:
         """ check exclude_fromheader_addresses (full addresses from From: header) """
         if 'from' not in headers:
             return False
@@ -72,7 +76,7 @@ class CheckUtils():
             pass
         return False
 
-    def sasl_found_in_exclude_list(config, sasl_username, checkName):
+    def sasl_found_in_exclude_list(config: dict[str, Any], sasl_username: str | None, checkName: str) -> bool:
         """ check exclude_sasl_usernames """
         if not sasl_username:
             return False
@@ -86,7 +90,7 @@ class CheckUtils():
             pass
         return False
 
-    def ip_found_in_exclude_ip_list(config, ip, checkName):
+    def ip_found_in_exclude_ip_list(config: dict[str, Any], ip: str, checkName: str) -> bool:
 
         """ check if exclude_ips has been configured for this check """
         try:
@@ -101,7 +105,7 @@ class CheckUtils():
 
         return False
 
-    def single_check_dry_run_active(config, checkName):
+    def single_check_dry_run_active(config: dict[str, Any], checkName: str) -> bool:
         try:
             action_value = config['checks'][checkName]['dry_run']
         except KeyError:
@@ -113,7 +117,7 @@ class CheckUtils():
             return True
         return False
 
-    def check_is_enabled(config, checkName):
+    def check_is_enabled(config: dict[str, Any], checkName: str) -> bool:
         try:
             enabled_value = config['checks'][checkName]['enabled']
         except KeyError:
@@ -125,7 +129,7 @@ class CheckUtils():
             return False
         return True
 
-    def not_exactly_one_address_in_from_header(config, headers):
+    def not_exactly_one_address_in_from_header(config: dict[str, Any], headers: dict[str, str]) -> bool:
         if 'from' not in headers:
             return False
 
@@ -143,7 +147,7 @@ class CheckUtils():
             return False
         return False
 
-    def is_date_invalid(config, headers):
+    def is_date_invalid(config: dict[str, Any], headers: dict[str, str]) -> bool:
         if 'date' not in headers:
             return False
 
@@ -157,7 +161,7 @@ class CheckUtils():
             return False
         return False
 
-    def is_subject_too_long(config, headers):
+    def is_subject_too_long(config: dict[str, Any], headers: dict[str, str]) -> bool:
         if 'subject' not in headers:
             return False
 
@@ -172,20 +176,20 @@ class CheckUtils():
             return True
         return False
 
-    def get_number_of_headers(headerCounter, headerName):
+    def get_number_of_headers(headerCounter: dict[str, int], headerName: str) -> int:
         if headerName in headerCounter:
             return headerCounter[headerName]
         else:
             return 0
 
 class CheckRunner():
-    def __init__(self, checkFunction):
+    def __init__(self, checkFunction: Callable[..., bool]) -> None:
         self.checkFunction = checkFunction
-    def isValid(self, headers, headerCounter, config):
+    def isValid(self, headers: dict[str, str], headerCounter: dict[str, int], config: dict[str, Any]) -> bool:
        return self.checkFunction(headers, headerCounter, config)
 
 class Logger():
-    def getSyslogLogger(config):
+    def getSyslogLogger(config: dict[str, Any]) -> logging.Logger:
         log = logging.getLogger(config['syslog_name'])
         log.setLevel(Logger.getLogLevel(config))
         handler = logging.handlers.SysLogHandler(address = '/dev/log', facility = config['syslog_facility'])
@@ -197,7 +201,7 @@ class Logger():
         log.addHandler(handler)
         return log
 
-    def getFileLogger(config):
+    def getFileLogger(config: dict[str, Any]) -> Any:
         if config['log_format'] == 'json':
             format = '%(message)s'
         else:
@@ -205,7 +209,7 @@ class Logger():
         logging.basicConfig(format=format, filename=config['log_filepath'], level=Logger.getLogLevel(config))
         return logging
 
-    def getStdoutLogger(config):
+    def getStdoutLogger(config: dict[str, Any]) -> Any:
         if config['log_format'] == 'json':
             format = '%(message)s'
         else:
@@ -213,14 +217,14 @@ class Logger():
         logging.basicConfig(format=format, level=Logger.getLogLevel(config))
         return logging
 
-    def getLogLevel(config):
+    def getLogLevel(config: dict[str, Any]) -> int:
         try:
             level = logging.DEBUG if config['debug'] == 1 else logging.INFO
         except KeyError:
             level = logging.INFO
         return level
 
-    def getLogPrivacyMode(config):
+    def getLogPrivacyMode(config: dict[str, Any]) -> bool:
         try:
             return config['log_privacy_mode'] == 1
         except KeyError:
@@ -231,10 +235,10 @@ class Logger():
 class Cfg(object):
     """Helper class for some configuration parameters
     """
-    config = None
-    logging = None
+    config: dict[str, Any] | None = None
+    logging: Any = None
 
-    def find_and_parse_config_file(configParam):
+    def find_and_parse_config_file(configParam: str) -> dict[str, Any]:
         yaml_data_file = None
 
         if configParam:
@@ -262,7 +266,7 @@ class Cfg(object):
         return config
 
     @staticmethod
-    def validate_config(config, allowed_checks):
+    def validate_config(config: dict[str, Any], allowed_checks: set[str]) -> list[str]:
         errors = []
 
         # log_target validation

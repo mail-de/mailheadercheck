@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+from typing import Any
 import Milter
 import json
 import random
@@ -10,7 +13,7 @@ class MailHeaderCheckMilter(Milter.Base):
     Milter that verifies RFC/BCP validity of some headers (Date, Subject, From, Message-ID, ...)
     """
 
-    allChecks = {
+    allChecks: dict[str, dict[str, Any]] = {
         'missing_from_header': {
             'niceName': "Missing From:-Header",
             'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'from') == 0)
@@ -85,7 +88,7 @@ class MailHeaderCheckMilter(Milter.Base):
         },
     }
 
-    def initializeHeaderCounter(self):
+    def initializeHeaderCounter(self) -> None:
         self.__headerCounter = {
             'from': 0,
             'subject': 0,
@@ -99,14 +102,18 @@ class MailHeaderCheckMilter(Milter.Base):
             'references': 0,
         }
 
-    def __init__(self):
-        self.__config = Cfg.config
-        self.__logging = Cfg.logging
-        self.__headers = dict()
-        self.__ipname = None
-        self.__ip = None
-        self.__port = None
-        self.__sasl_username = None
+    def __init__(self) -> None:
+        self.__config: dict[str, Any] = Cfg.config
+        self.__logging: Any = Cfg.logging
+        self.__headers: dict[str, str] = dict()
+        self.__ipname: str | None = None
+        self.__ip: str | None = None
+        self.__port: int | None = None
+        self.__sasl_username: str | None = None
+        self.__connectionId: str = ''
+        self.__envelopeFrom: str = ''
+        self.__dry_run_active: bool = False
+        self.__headerCounter: dict[str, int] = {}
         self.initializeHeaderCounter()
 
         try:
@@ -117,7 +124,7 @@ class MailHeaderCheckMilter(Milter.Base):
             self.__dry_run_active = True
 
     @Milter.noreply
-    def connect(self, ipname, family, hostaddr):
+    def connect(self, ipname: str, family: int, hostaddr: tuple[str, int]) -> int:
         alphabet = string.ascii_uppercase + string.digits
         self.__connectionId = ''.join(random.choices(alphabet, k=12))
 
@@ -130,7 +137,7 @@ class MailHeaderCheckMilter(Milter.Base):
         return Milter.CONTINUE
 
     @Milter.noreply
-    def envfrom(self, mailfrom, *dummy):
+    def envfrom(self, mailfrom: str, *dummy: Any) -> int:
         """ Callback that is called when MAIL FROM: is recognized. """
 
         self.__headers = dict()
@@ -147,7 +154,7 @@ class MailHeaderCheckMilter(Milter.Base):
         return Milter.CONTINUE
 
     @Milter.noreply
-    def header(self, name, hval):
+    def header(self, name: str, hval: str) -> int:
         """ header callback gets called for each header """
 
         if name.lower() in self.__headerCounter:
@@ -156,7 +163,7 @@ class MailHeaderCheckMilter(Milter.Base):
 
         return Milter.CONTINUE
 
-    def eom(self):
+    def eom(self) -> int:
         """ end of message. Gets called after end of the message body """
 
         check_result = 'accept'
