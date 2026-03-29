@@ -73,7 +73,8 @@ class MailHeaderCheckMilter(Milter.Base):
 
     def close(self) -> int:
         """Callback invoked when the SMTP connection is closed."""
-        record_connection_closed()
+        if self.__ip is not None:
+            record_connection_closed()
         return Milter.CONTINUE
 
     @Milter.noreply
