@@ -1,3 +1,6 @@
+# invalid enabled value: 2
+# result: invalid
+
 debug: 1
 log_target: file
 log_format: plain
@@ -11,7 +14,8 @@ socket: inet:40000@localhost
 dry_run: 0
 
 checks:
-    missing_from_header: {}
+    missing_from_header:
+        enabled: 2
     multiple_from_headers: {}
     empty_from_header: {}
     not_exactly_one_address_in_from_header: {}

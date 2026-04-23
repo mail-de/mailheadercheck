@@ -1,0 +1,10 @@
+# metrics section is not a mapping (must be a dict)
+# result: invalid
+
+debug: 0
+log_target: stdout
+log_format: plain
+socket: inet:40000@localhost
+dry_run: 1
+
+metrics: "enabled"

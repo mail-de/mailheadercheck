@@ -1,3 +1,6 @@
+# invalid add_result_header value
+# result: invalid
+
 debug: 1
 log_target: file
 log_format: plain
@@ -5,6 +8,7 @@ log_privacy_mode: 0
 log_filepath: /dev/null
 syslog_name: mailheadercheck
 syslog_facility: mail
+add_result_header: 2
 
 socket: inet:40000@localhost
 

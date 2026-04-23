@@ -1,0 +1,13 @@
+# invalid metrics port (out of range)
+# result: invalid
+
+debug: 0
+log_target: stdout
+log_format: plain
+socket: inet:40000@localhost
+dry_run: 1
+
+metrics:
+    enabled: 1
+    port: 99999
+    address: "127.0.0.1"

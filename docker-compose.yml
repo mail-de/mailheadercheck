@@ -19,6 +19,7 @@ services:
     # Make sure the mounted config binds to 0.0.0.0 (see docker/config.yaml)
     ports:
       - "30073:30073"
+      - "9182:9182"
 
     restart: always
 

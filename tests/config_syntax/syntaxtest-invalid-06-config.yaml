@@ -1,4 +1,7 @@
-debug: 1
+# invalid debug value
+# result: invalid
+
+debug: 2
 log_target: file
 log_format: plain
 log_privacy_mode: 0

@@ -1,6 +1,9 @@
+# invalid log_format value
+# result: invalid
+
 debug: 1
 log_target: file
-log_format: plain
+log_format: xml
 log_privacy_mode: 0
 log_filepath: /dev/null
 syslog_name: mailheadercheck

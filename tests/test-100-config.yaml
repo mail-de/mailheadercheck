@@ -14,7 +14,8 @@ checks:
     missing_from_header: {}
     multiple_from_headers: {}
     empty_from_header: {}
-    not_exactly_one_address_in_from_header: {}
+    not_exactly_one_address_in_from_header:
+        enabled: 0
     multiple_subject_headers: {}
     long_subject_header: {}
     missing_date_header: {}

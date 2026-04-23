@@ -1,280 +1,299 @@
-import Milter
+"""Milter implementation for mailheadercheck."""
+from __future__ import annotations
+
 import json
 import random
 import string
-from mailheaderchecklib.utility import CheckRunner, CheckUtils, Logger, Cfg
+import time
+from dataclasses import dataclass, field
+from typing import Any
+
+import Milter
+
+from mailheaderchecklib.checks import CHECKS
+from mailheaderchecklib.metrics import (
+    record_message, record_check_violation, record_eom_duration,
+    record_connection_opened, record_connection_closed, record_exclusion_hit,
+)
+from mailheaderchecklib.utility import CheckUtils, Logger, Cfg
+
+
+@dataclass
+class _MessageState:
+    headers: dict[str, str] = field(default_factory=dict)
+    header_counter: dict[str, int] = field(default_factory=lambda: {
+        'from': 0,
+        'subject': 0,
+        'date': 0,
+        'sender': 0,
+        'reply-to': 0,
+        'to': 0,
+        'cc': 0,
+        'message-id': 0,
+        'in-reply-to': 0,
+        'references': 0,
+    })
+    envelope_from: str = ''
+    sasl_username: str | None = None
+
 
 # noinspection PyIncorrectDocstring,PyUnresolvedReferences
 class MailHeaderCheckMilter(Milter.Base):
     """
     Milter that verifies RFC/BCP validity of some headers (Date, Subject, From, Message-ID, ...)
     """
+    # pylint: disable=no-member  # Milter is a C extension; CONTINUE/ACCEPT/REJECT are valid
 
-    allChecks = {
-        'missing_from_header': {
-            'niceName': "Missing From:-Header",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'from') == 0)
-        },
-        'multiple_from_headers': {
-            'niceName': "Multiple From:-Headers",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'from') > 1)
-        },
-        'empty_from_header': {
-            'niceName': "Empty From:-Header",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'from') == 1 and len(headers['from'].strip()) == 0)
-        },
-        'not_exactly_one_address_in_from_header': {
-            'niceName': "Not exactly one address in From:-Header",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'from') == 1 and len(headers['from'].strip()) > 0 and CheckUtils.not_exactly_one_address_in_from_header(config, headers))
-        },
-        'multiple_subject_headers': {
-            'niceName': "Multiple Subject:-Headers",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'subject') > 1)
-        },
-        'long_subject_header': {
-            'niceName': "Subject:-Header too long",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'subject') == 1 and CheckUtils.is_subject_too_long(config, headers))
-        },
-        'missing_date_header': {
-            'niceName': "Missing Date:-Header",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'date') == 0)
-        },
-        'multiple_date_headers': {
-            'niceName': "Multiple Date:-Headers",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'date') > 1)
-        },
-        'empty_date_header': {
-            'niceName': "Empty Date:-Header",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'date') == 1 and len(headers['date'].strip()) == 0)
-        },
-        'invalid_date_header': {
-            'niceName': "Invalid Date:-Header",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'date') == 1 and CheckUtils.is_date_invalid(config, headers))
-        },
-        'multiple_sender_headers': {
-            'niceName': "Multiple Sender:-Headers",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'sender') > 1)
-        },
-        'multiple_replyto_headers': {
-            'niceName': "Multiple Reply-To:-Headers",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'reply-to') > 1)
-        },
-        'multiple_to_headers': {
-            'niceName': "Multiple To:-Headers",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'to') > 1)
-        },
-        'multiple_cc_headers': {
-            'niceName': "Multiple Cc:-Headers",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'cc') > 1)
-        },
-        'missing_messageid_header': {
-            'niceName': "Missing Message-ID:-Header",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'message-id') == 0)
-        },
-        'multiple_messageid_headers': {
-            'niceName': "Multiple Message-ID:-Headers",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'message-id') > 1)
-        },
-        'multiple_inreplyto_headers': {
-            'niceName': "Multiple In-Reply-To:-Header",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'in-reply-to') > 1)
-        },
-        'multiple_references_headers': {
-            'niceName': "Multiple References:-Headers",
-            'check': CheckRunner(lambda headers, headerCounter, config: CheckUtils.get_number_of_headers(headerCounter, 'references') > 1)
-        },
-    }
-
-    def initializeHeaderCounter(self):
-        self.__headerCounter = {
-            'from': 0,
-            'subject': 0,
-            'date': 0,
-            'sender': 0,
-            'reply-to': 0,
-            'to': 0,
-            'cc': 0,
-            'message-id': 0,
-            'in-reply-to': 0,
-            'references': 0,
-        }
-
-    def __init__(self):
-        self.__config = Cfg.config
-        self.__logging = Cfg.logging
-        self.__headers = dict()
-        self.__ipname = None
-        self.__ip = None
-        self.__port = None
-        self.__sasl_username = None
-        self.initializeHeaderCounter()
-
+    def __init__(self) -> None:
+        self.__config: dict[str, Any] = Cfg.config or {}
+        self.__logging: Any = Cfg.logging
+        self.__connection_id: str = ''
+        self.__ip: str | None = None
+        self.__msg: _MessageState = _MessageState()
         try:
             self.__dry_run_active = bool(self.__config['dry_run'])
-        except KeyError:     # if there is no "dry_run" entry in the config, we activate it
-            self.__dry_run_active = True
-        except TypeError:    #  TypeError: "'NoneType' object is not subscriptable". Happens if in yaml you don't configure empty dict, but Nothing/None
+        except (KeyError, TypeError):
             self.__dry_run_active = True
 
     @Milter.noreply
-    def connect(self, ipname, family, hostaddr):
-        alphabet = string.ascii_uppercase + string.digits
-        self.__connectionId = ''.join(random.choices(alphabet, k=12))
-
-        self.__ipname = ipname
+    def connect(  # pylint: disable=arguments-renamed
+            self, ipname: str, _family: int, hostaddr: tuple[str, int]) -> int:
+        """Callback invoked when a new SMTP connection is accepted."""
+        self.__connection_id = ''.join(
+            random.choices(string.ascii_uppercase + string.digits, k=12)
+        )
         self.__ip = hostaddr[0]
-        self.__port = hostaddr[1]
+        port = hostaddr[1]
+        self.__logging.debug(
+            '%s Connection received: Hostname="%s" IP="%s" Port=%s',
+            self.__connection_id, ipname, self.__ip, port
+        )
+        record_connection_opened()
+        return Milter.CONTINUE
 
-        self.__logging.debug(self.__connectionId+' Connection received: Hostname="'+self.__ipname+'" IP="'+self.__ip+'" Port='+str(self.__port))
-
+    def close(self) -> int:
+        """Callback invoked when the SMTP connection is closed."""
+        if self.__ip is not None:
+            record_connection_closed()
         return Milter.CONTINUE
 
     @Milter.noreply
-    def envfrom(self, mailfrom, *dummy):
+    def envfrom(self, mailfrom: str, *_: Any) -> int:  # pylint: disable=arguments-differ
         """ Callback that is called when MAIL FROM: is recognized. """
-
-        self.__headers = dict()
-        self.__envelopeFrom = mailfrom
-        # try to capture SASL username if available
+        self.__msg = _MessageState()
+        self.__msg.envelope_from = mailfrom
         try:
-            self.__sasl_username = self.getsymval('auth_authen')
-            if not self.__sasl_username:
-                self.__sasl_username = self.getsymval('{auth_authen}')
-        except Exception:
-            self.__sasl_username = None
-        self.initializeHeaderCounter()
-
+            self.__msg.sasl_username = self.getsymval('auth_authen')
+            if not self.__msg.sasl_username:
+                self.__msg.sasl_username = self.getsymval('{auth_authen}')
+        except Exception:  # pylint: disable=broad-exception-caught
+            self.__msg.sasl_username = None
         return Milter.CONTINUE
 
     @Milter.noreply
-    def header(self, name, hval):
+    def header(self, name: str, hval: str) -> int:  # pylint: disable=arguments-renamed
         """ header callback gets called for each header """
-
-        if name.lower() in self.__headerCounter:
-            self.__headerCounter[name.lower()] += 1
-            self.__headers[name.lower()] = hval
-
+        if name.lower() in self.__msg.header_counter:
+            self.__msg.header_counter[name.lower()] += 1
+            self.__msg.headers[name.lower()] = hval
         return Milter.CONTINUE
 
-    def eom(self):
+    def eom(self) -> int:
         """ end of message. Gets called after end of the message body """
+        # pylint: disable=too-many-branches,too-many-statements,too-many-locals
 
+        eom_start = time.perf_counter()
         check_result = 'accept'
         actiontaken = 'accept'
-        failedCheck = ''
+        failed_checks = []
 
-        for checkName, oneCheck in self.allChecks.items():
-            self.__logging.debug(self.__connectionId+' Running check: ' + oneCheck['niceName'] + '('+checkName+')')
-
-            self.__logging.debug(self.__connectionId+' Check if the SASL username is on exclude_sasl_usernames list of check "'+checkName+'"')
-            if CheckUtils.sasl_found_in_exclude_list(self.__config, self.__sasl_username, checkName):
-                self.__logging.debug(self.__connectionId+' SASL username in exclude list found, skipping this check...')
+        for check in CHECKS:
+            if not CheckUtils.check_is_enabled(self.__config, check.name):
+                self.__logging.debug(
+                    '%s Check "%s" is disabled (enabled=0), skipping',
+                    self.__connection_id, check.name
+                )
                 continue
 
-            self.__logging.debug(self.__connectionId+' Check if the sender address is on exclude_envelopefrom_addresses list of check "'+checkName+'"')
-            if CheckUtils.envelopefrom_found_in_exclude_list(self.__config, self.__envelopeFrom, checkName):
-                self.__logging.debug(self.__connectionId+' Envelope-From in exclude list found, skipping this check...')
+            self.__logging.debug(
+                '%s Running check: %s (%s)',
+                self.__connection_id, check.nice_name, check.name
+            )
+
+            self.__logging.debug(
+                '%s Check if the SASL username is on exclude_sasl_usernames'
+                ' list of check "%s"',
+                self.__connection_id, check.name
+            )
+            if CheckUtils.sasl_found_in_exclude_list(
+                    self.__config, self.__msg.sasl_username, check.name):
+                self.__logging.debug(
+                    '%s SASL username in exclude list found, skipping this check...',
+                    self.__connection_id
+                )
+                record_exclusion_hit(check.name, 'sasl')
                 continue
 
-            self.__logging.debug(self.__connectionId+' Check if the From: header address is on exclude_fromheader_addresses list of check "'+checkName+'"')
-            if CheckUtils.fromheader_found_in_exclude_list(self.__config, self.__headers, checkName):
-                self.__logging.debug(self.__connectionId+' From header address in exclude list found, skipping this check...')
+            self.__logging.debug(
+                '%s Check if the sender address is on exclude_envelopefrom_addresses'
+                ' list of check "%s"',
+                self.__connection_id, check.name
+            )
+            if CheckUtils.envelopefrom_found_in_exclude_list(
+                    self.__config, self.__msg.envelope_from, check.name):
+                self.__logging.debug(
+                    '%s Envelope-From in exclude list found, skipping this check...',
+                    self.__connection_id
+                )
+                record_exclusion_hit(check.name, 'envelopefrom')
                 continue
 
-            self.__logging.debug(self.__connectionId+' Check if the sender domain is on exclude domain list of check "'+checkName+'"')
-            if CheckUtils.domain_found_in_exclude_list(self.__config, self.__headers, self.__envelopeFrom, checkName):
-                self.__logging.debug(self.__connectionId+' Domain in one of the exclude domain lists found, skipping this check...')
+            self.__logging.debug(
+                '%s Check if the From: header address is on exclude_fromheader_addresses'
+                ' list of check "%s"',
+                self.__connection_id, check.name
+            )
+            if CheckUtils.fromheader_found_in_exclude_list(
+                    self.__config, self.__msg.headers, check.name):
+                self.__logging.debug(
+                    '%s From header address in exclude list found, skipping this check...',
+                    self.__connection_id
+                )
+                record_exclusion_hit(check.name, 'fromheader')
                 continue
 
-            self.__logging.debug(self.__connectionId+' Check if the IP address is on exclude_ips list of check "'+checkName+'"')
-            if CheckUtils.ip_found_in_exclude_ip_list(self.__config, self.__ip, checkName):
-                self.__logging.debug(self.__connectionId+' IP in exclude_ip list found, skipping this check...')
+            self.__logging.debug(
+                '%s Check if the sender domain is on exclude domain list of check "%s"',
+                self.__connection_id, check.name
+            )
+            if CheckUtils.domain_found_in_exclude_list(
+                    self.__config, self.__msg.headers,
+                    self.__msg.envelope_from, check.name):
+                self.__logging.debug(
+                    '%s Domain in one of the exclude domain lists found,'
+                    ' skipping this check...',
+                    self.__connection_id
+                )
+                record_exclusion_hit(check.name, 'domain')
                 continue
 
-            self.__logging.debug(self.__connectionId+' Doing the check now...')
-            check_response = oneCheck['check'].isValid(self.__headers, self.__headerCounter, self.__config)
-            self.__logging.debug(self.__connectionId+' Check result: ' + str(check_response))
-            if check_response == True:
+            self.__logging.debug(
+                '%s Check if the IP address is on exclude_ips list of check "%s"',
+                self.__connection_id, check.name
+            )
+            if CheckUtils.ip_found_in_exclude_ip_list(self.__config, self.__ip, check.name):
+                self.__logging.debug(
+                    '%s IP in exclude_ip list found, skipping this check...',
+                    self.__connection_id
+                )
+                record_exclusion_hit(check.name, 'ip')
+                continue
+
+            self.__logging.debug('%s Doing the check now...', self.__connection_id)
+            check_response = check.fn(self.__msg.headers, self.__msg.header_counter, self.__config)
+            self.__logging.debug('%s Check result: %s', self.__connection_id, check_response)
+            if check_response:
                 check_result = 'reject'
-                failedCheck = oneCheck['niceName']
-                if CheckUtils.single_check_dry_run_active(self.__config, checkName):
-                    self.__logging.debug(self.__connectionId+' This check returned a reject, BUT the check is marked as "dry_run=1". Proceeding with checks...')
-                elif self.__dry_run_active == False:
+                failed_checks.append(check.nice_name)
+                record_check_violation(check.name)
+                if CheckUtils.single_check_dry_run_active(self.__config, check.name):
+                    self.__logging.debug(
+                        '%s This check returned a reject, BUT the check is'
+                        ' marked as "dry_run=1". Proceeding with checks...',
+                        self.__connection_id
+                    )
+                elif not self.__dry_run_active:
                     actiontaken = 'reject'
-                    self.__logging.debug(self.__connectionId+' This check returned a reject, we skip remaining checks')
+                    self.__logging.debug(
+                        '%s This check returned a reject, we skip remaining checks',
+                        self.__connection_id
+                    )
                     break
                 else:
-                    self.__logging.debug(self.__connectionId+' This check returned a reject, BUT global dry-run is active. Proceeding with checks...')
+                    self.__logging.debug(
+                        '%s This check returned a reject, BUT global dry-run'
+                        ' is active. Proceeding with checks...',
+                        self.__connection_id
+                    )
+
+        failed_check_str = ', '.join(failed_checks)
+        record_eom_duration(time.perf_counter() - eom_start)
+        record_message(check_result, actiontaken, self.__dry_run_active)
 
         if actiontaken == 'reject':
-            self.setreply("554", xcode="5.7.0", msg="Header violation: " + failedCheck)
+            self.setreply("554", xcode="5.7.0", msg="Header violation: " + failed_checks[-1])
 
-        """ Prepare headers for log output """
-        if 'from' not in self.__headers:
-            fromHeader = 'missing-from-header'
-        elif self.__headerCounter['from'] > 1:
-            fromHeader = 'multiple-from-headers'
-        elif Logger.getLogPrivacyMode(self.__config):
-            fromHeader = 'privacy-mode-active'
+        # Prepare headers for log output
+        if 'from' not in self.__msg.headers:
+            from_header = 'missing-from-header'
+        elif self.__msg.header_counter['from'] > 1:
+            from_header = 'multiple-from-headers'
+        elif Logger.get_log_privacy_mode(self.__config):
+            from_header = 'privacy-mode-active'
         else:
-            fromHeader = self.__headers['from'].replace('\n', ' ').replace('\r', '')
+            from_header = self.__msg.headers['from'].replace('\n', ' ').replace('\r', '')
 
-        if 'subject' not in self.__headers:
-            subjectHeader = 'missing-subject-header'
-        elif self.__headerCounter['subject'] > 1:
-            subjectHeader = 'multiple-subject-headers'
-        elif Logger.getLogPrivacyMode(self.__config):
-            subjectHeader = 'privacy-mode-active'
+        if 'subject' not in self.__msg.headers:
+            subject_header = 'missing-subject-header'
+        elif self.__msg.header_counter['subject'] > 1:
+            subject_header = 'multiple-subject-headers'
+        elif Logger.get_log_privacy_mode(self.__config):
+            subject_header = 'privacy-mode-active'
         else:
-            subjectHeader = (self.__headers['subject'][:200] + '...') if len(self.__headers['subject']) > 200 else self.__headers['subject']
-            subjectHeader = subjectHeader.replace('\n', ' ').replace('\r', '')
+            subject_header = self.__msg.headers['subject']
+            if len(subject_header) > 200:
+                subject_header = subject_header[:200] + '...'
+            subject_header = subject_header.replace('\n', ' ').replace('\r', '')
 
-        if 'date' not in self.__headers:
-            dateHeader = 'missing-date-header'
-        elif self.__headerCounter['date'] > 1:
-            dateHeader = 'multiple-date-headers'
+        if 'date' not in self.__msg.headers:
+            date_header = 'missing-date-header'
+        elif self.__msg.header_counter['date'] > 1:
+            date_header = 'multiple-date-headers'
         else:
-            dateHeader = self.__headers['date'].replace('\n', ' ').replace('\r', '')
-
+            date_header = self.__msg.headers['date'].replace('\n', ' ').replace('\r', '')
 
         if self.__config['log_format'] == 'json':
             log_output = json.dumps({
-                'connection_id': self.__connectionId,
+                'connection_id': self.__connection_id,
                 'queue_id': self.getsymval('i'),
                 'client_ip': self.__ip,
-                'sasl_username': self.__sasl_username,
-                'envelope_from': self.__envelopeFrom,
-                'header_from': fromHeader,
-                'header_subject': subjectHeader,
-                'header_date': dateHeader,
-                'error_response_text': failedCheck,
+                'sasl_username': self.__msg.sasl_username,
+                'envelope_from': self.__msg.envelope_from,
+                'header_from': from_header,
+                'header_subject': subject_header,
+                'header_date': date_header,
+                'error_response_text': failed_check_str,
                 'result': check_result,
                 'actiontaken': actiontaken,
                 'dry_run': 'yes' if self.__dry_run_active else 'no'
             })
         else:
-            log_output = "connection_id={0} queue_id={1} client_ip=\"{2}\" sasl_username=\"{3}\" envelope_from=\"{4}\" header_from=\"{5}\" header_subject=\"{6}\" header_date=\"{7}\" error_response_text=\"{8}\" result={9} actiontaken={10} dry_run={11}".format(
-                self.__connectionId,
-                self.getsymval('i'),
-                (self.__ip or '').replace('"', '\''),
-                (self.__sasl_username or '').replace('"', '\''),
-                (self.__envelopeFrom or '').replace('"', '\''),
-                fromHeader.replace('"', '\''),
-                subjectHeader.replace('"', '\''),
-                dateHeader,
-                failedCheck,
-                check_result,
-                actiontaken,
-                'yes' if self.__dry_run_active else 'no'
+            ip_val = (self.__ip or '').replace('"', "'")
+            sasl_val = (self.__msg.sasl_username or '').replace('"', "'")
+            env_val = (self.__msg.envelope_from or '').replace('"', "'")
+            from_val = from_header.replace('"', "'")
+            subj_val = subject_header.replace('"', "'")
+            log_output = (
+                f'connection_id={self.__connection_id}'
+                f' queue_id={self.getsymval("i")}'
+                f' client_ip="{ip_val}"'
+                f' sasl_username="{sasl_val}"'
+                f' envelope_from="{env_val}"'
+                f' header_from="{from_val}"'
+                f' header_subject="{subj_val}"'
+                f' header_date="{date_header}"'
+                f' error_response_text="{failed_check_str}"'
+                f' result={check_result}'
+                f' actiontaken={actiontaken}'
+                f' dry_run={"yes" if self.__dry_run_active else "no"}'
             )
         self.__logging.info(log_output)
 
-
         if 'add_result_header' in self.__config and self.__config['add_result_header'] == 1:
             header_output = json.dumps({
-                'connection_id': self.__connectionId,
+                'connection_id': self.__connection_id,
                 'queue_id': self.getsymval('i'),
-                'error_response_text': failedCheck,
+                'error_response_text': failed_check_str,
                 'result': check_result,
                 'actiontaken': actiontaken,
                 'dry_run': 'yes' if self.__dry_run_active else 'no'

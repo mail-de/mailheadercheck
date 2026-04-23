@@ -11,7 +11,9 @@ socket: inet:40000@localhost
 dry_run: 0
 
 checks:
-    missing_from_header: {}
+    missing_from_header:
+        exclude_ips:
+            - not-a-valid-cidr
     multiple_from_headers: {}
     empty_from_header: {}
     not_exactly_one_address_in_from_header: {}

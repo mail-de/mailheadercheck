@@ -5,6 +5,13 @@ on:
     branches: ["**"]
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   run_markdownlint:
     name: Run markdownlint
@@ -13,4 +20,4 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Run markdownlint
-        uses: actionshub/markdownlint@main
+        uses: actionshub/markdownlint@v3.1.4

@@ -1,3 +1,6 @@
+# invalid global dry_run value
+# result: invalid
+
 debug: 1
 log_target: file
 log_format: plain
@@ -8,7 +11,7 @@ syslog_facility: mail
 
 socket: inet:40000@localhost
 
-dry_run: 0
+dry_run: banana
 
 checks:
     missing_from_header: {}

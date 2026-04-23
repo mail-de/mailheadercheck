@@ -5,6 +5,13 @@ on:
     branches: ["**"]
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   run_tests:
     name: Run testing.sh (miltertest)
@@ -17,6 +24,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+          cache: 'pip'
 
       - name: Install system dependencies (miltertest and build tools)
         run: |
@@ -30,7 +38,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install PyYAML pymilter setproctitle
+          pip install -r requirements.txt
 
       - name: Make scripts executable
         run: |

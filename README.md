@@ -39,8 +39,8 @@ mailheadercheck script into /usr/local/sbin/. Place the systemd unit file into
 /etc/systemd/system/:
 
 ```
-sudo apt install python3-dev libmilter-dev python3-pip python3-yaml
-sudo pip3 install pymilter
+sudo apt install python3-dev libmilter-dev python3-pip
+sudo pip3 install -r requirements.txt
 sudo cp mailheadercheck /usr/local/sbin/
 sudo cp -r mailheaderchecklib /usr/local/sbin/
 sudo chmod 755 /usr/local/sbin/mailheadercheck
@@ -81,6 +81,24 @@ Additionally, you can change the "dry_run" setting in each check
 individually. With this you can either set "dry_run" globally to 1, and
 then individual checks to 0. Or the other way around.
 
+### enabled (per check)
+
+Each check can be individually disabled by setting `enabled: 0` under
+`checks.<check_name>`. A disabled check is skipped entirely: it does not
+log, does not count as a violation, and does not appear in the summary
+line. This is different from `dry_run: 1`, which still runs the check and
+logs the result but does not reject the message.
+
+Example — disable the "not exactly one address in From" check:
+
+```yaml
+checks:
+  not_exactly_one_address_in_from_header:
+    enabled: 0
+```
+
+If `enabled` is absent (the default), the check runs normally.
+
 ### log_target
 
 You can choose from the following log targets:
@@ -102,6 +120,44 @@ write the Subject:-header or From:-header to the logfile.
 
 log_privacy_mode=0 deactivates the privacy mode.
 
+### Log output
+
+One summary line is written per message (at INFO level). Examples for
+both formats — first an accepted message, then a rejected one:
+
+**plain** (`log_format: plain`):
+
+```
+mailheadercheck[1234]: connection_id=A1B2C3D4E5F6 queue_id=3xHt2f001234 client_ip="192.0.2.10" sasl_username="" envelope_from="<sender@example.com>" header_from="Sender Name <sender@example.com>" header_subject="Hello world" header_date="Wed, 23 Jun 2021 16:30:55 +0200" error_response_text="" result=accept actiontaken=accept dry_run=no
+mailheadercheck[1234]: connection_id=A1B2C3D4E5F6 queue_id=3xHt2f001235 client_ip="192.0.2.10" sasl_username="" envelope_from="<sender@example.com>" header_from="missing-from-header" header_subject="Hello world" header_date="Wed, 23 Jun 2021 16:30:55 +0200" error_response_text="Missing From:-Header" result=reject actiontaken=reject dry_run=no
+```
+
+**json** (`log_format: json`):
+
+```json
+{"connection_id": "A1B2C3D4E5F6", "queue_id": "3xHt2f001234", "client_ip": "192.0.2.10", "sasl_username": null, "envelope_from": "<sender@example.com>", "header_from": "Sender Name <sender@example.com>", "header_subject": "Hello world", "header_date": "Wed, 23 Jun 2021 16:30:55 +0200", "error_response_text": "", "result": "accept", "actiontaken": "accept", "dry_run": "no"}
+{"connection_id": "A1B2C3D4E5F6", "queue_id": "3xHt2f001235", "client_ip": "192.0.2.10", "sasl_username": null, "envelope_from": "<sender@example.com>", "header_from": "missing-from-header", "header_subject": "Hello world", "header_date": "Wed, 23 Jun 2021 16:30:55 +0200", "error_response_text": "Missing From:-Header", "result": "reject", "actiontaken": "reject", "dry_run": "no"}
+```
+
+Field notes:
+
+* `connection_id` — random 12-character ID assigned per TCP connection;
+  links debug log lines to the summary line for that connection.
+* `queue_id` — Postfix queue ID.
+* `sasl_username` — authenticated SASL username, or `null` / empty if the
+  connection is not authenticated.
+* `error_response_text` — name of the failing check, or empty if the
+  message was accepted. In dry_run mode, multiple violations are listed
+  comma-separated.
+* `result` — `accept` or `reject` based on what the checks found.
+* `actiontaken` — `accept` or `reject` reflecting what was actually done.
+  Differs from `result` when dry_run is active: `result` can be `reject`
+  while `actiontaken` is `accept`.
+* `header_from` and `header_subject` — set to `privacy-mode-active` when
+  `log_privacy_mode: 1`. Set to `missing-from-header` /
+  `missing-subject-header` or `multiple-from-headers` /
+  `multiple-subject-headers` in the respective error cases.
+
 ### socket
 
 The "socket" setting can have one of the following formats:
@@ -111,11 +167,91 @@ The "socket" setting can have one of the following formats:
 * unix:/path/to/socket
 * local:/path/to/socket
 
+### metrics
+
+An optional Prometheus/OpenMetrics-compatible scrape endpoint can be enabled.
+It requires the `prometheus_client` Python package (install via pip or your distro's package manager):
+
+```sh
+pip install prometheus_client
+# or on Debian/Ubuntu:
+sudo apt install python3-prometheus-client
+```
+
+Enable and configure it in `config.yaml`:
+
+```yaml
+metrics:
+  enabled: 1            # 0 = disabled (default)
+  port: 9182            # TCP port for the /metrics endpoint
+  address: "127.0.0.1"  # bind address; use "0.0.0.0" to allow remote scraping
+```
+
+These settings are **startup-only** — changing them requires a full milter restart
+(same behaviour as `socket` and `log_target`).
+
+When enabled, the following metrics are exposed at `http://<address>:<port>/metrics`:
+
+| Metric | Type | Labels |
+|---|---|---|
+| `mailheadercheck_messages_total` | Counter | `result`, `actiontaken`, `dry_run` |
+| `mailheadercheck_check_violations_total` | Counter | `check_name` |
+| `mailheadercheck_exclusions_total` | Counter | `check_name`, `exclusion_type` |
+| `mailheadercheck_config_reloads_total` | Counter | `result` (`success`/`failure`) |
+| `mailheadercheck_eom_duration_seconds` | Histogram | — |
+| `mailheadercheck_active_connections` | Gauge | — |
+| `mailheadercheck_info` | Gauge (=1) | `version` |
+
+The endpoint supports both the standard Prometheus text format and the OpenMetrics
+format (via HTTP content negotiation).
+
+Example Prometheus scrape configuration:
+
+```yaml
+scrape_configs:
+  - job_name: 'mailheadercheck'
+    static_configs:
+      - targets: ['localhost:9182']
+```
+
+### Reloading configuration without restart (SIGHUP)
+
+Sending `SIGHUP` to the milter process causes it to re-read and apply
+the configuration file without stopping the milter:
+
+```sh
+kill -HUP $(pidof mailheadercheck)
+```
+
+For systemd, the provided unit file (`contrib/systemd/mailheadercheck.service`)
+already includes `ExecReload`, so you can reload with:
+
+```sh
+sudo systemctl reload mailheadercheck
+```
+
+**What is reloaded:** per-check options (`dry_run`, `enabled`, exclusion
+lists) and any other settings read from config on a per-message basis.
+
+**What requires a full restart:** `log_target`, `log_format`, `socket`,
+`syslog_name`, `syslog_facility`, `log_filepath`, and all `metrics:` settings
+(`enabled`, `port`, `address`). These are applied once at startup. If
+validation of the reloaded config fails, the old config remains active and
+the errors are logged.
+
 ### add_result_header
 
 Setting "add_result_header" to 1 will add a header to the email with
-the name "X-MailHeaderCheck". It contains a JSON string with the "qid",
-"error_response_text", "result", "actiontaken" and "dry_run".
+the name "X-MailHeaderCheck". It contains a JSON string with the fields
+"connection_id", "queue_id", "error_response_text", "result",
+"actiontaken" and "dry_run".
+
+### The checks: section
+
+**All checks are always active by default.** Listing or omitting a check
+name in the `checks:` section does not enable or disable it — the section
+only configures per-check options. To fully disable a single check, set
+`enabled: 0` for it (see [enabled (per check)](#enabled-per-check) above).
 
 ### Exclusion options (per check)
 

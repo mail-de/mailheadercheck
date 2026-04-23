@@ -1,3 +1,6 @@
+# unknown top-level key produces a warning but is still valid (does not block startup)
+# result: valid
+
 debug: 1
 log_target: file
 log_format: plain
@@ -9,6 +12,8 @@ syslog_facility: mail
 socket: inet:40000@localhost
 
 dry_run: 0
+
+some_unknown_key: yes
 
 checks:
     missing_from_header: {}

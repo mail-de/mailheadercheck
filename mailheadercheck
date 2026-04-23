@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
+"""mailheadercheck - Postfix milter for RFC/BCP email header validation."""
 
 import argparse
+import signal
 import sys
 import Milter
 from mailheaderchecklib.utility import Logger, Cfg
 from mailheaderchecklib.mailheadercheckmilter import MailHeaderCheckMilter
+from mailheaderchecklib.checks import CHECKS
+from mailheaderchecklib.metrics import init_metrics, record_config_reload, check_dependencies
 
 NAME = "mailheadercheck"
-VERSION = "2025.2"
+VERSION = "2026.1"
 
 try:
     # noinspection PyUnresolvedReferences
@@ -25,10 +29,15 @@ __copyright__ = "Copyright (C) by AUTHORS"
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(epilog=NAME)
 
-    parser.add_argument("--config", "-c",
-                        type=str,
-                        default="",
-                        help="Path to config file. If not provided, the following order will be tested: /etc/mailheadercheck/config.yaml, ./config.yaml")
+    parser.add_argument(
+        "--config", "-c",
+        type=str,
+        default="",
+        help=(
+            "Path to config file. If not provided, the following order will be"
+            " tested: /etc/mailheadercheck/config.yaml, ./config.yaml"
+        )
+    )
     parser.add_argument("--configcheck",
                         action="store_true",
                         help="Validate the configuration file and exit (does not start the milter)")
@@ -38,9 +47,12 @@ if __name__ == "__main__":
     config = Cfg.find_and_parse_config_file(params.config)
 
     # Run config validation before starting the milter
-    allowed_checks = set(MailHeaderCheckMilter.allChecks.keys())
+    allowed_checks = {check.name for check in CHECKS}
     if params.configcheck:
-        errors = Cfg.validate_config(config, allowed_checks)
+        errors, warnings = Cfg.validate_config(config, allowed_checks)
+        errors += check_dependencies(config)
+        for w in warnings:
+            print(f"WARNING: {w}")
         for e in errors:
             print(f"ERROR: {e}")
         if errors:
@@ -50,32 +62,66 @@ if __name__ == "__main__":
             sys.exit(0)
 
     # Normal startup: validation
-    errors = Cfg.validate_config(config, allowed_checks)
+    errors, warnings = Cfg.validate_config(config, allowed_checks)
+    errors += check_dependencies(config)
+    for w in warnings:
+        print(f"WARNING: {w}")
     for e in errors:
         print(f"ERROR: {e}")
     if errors:
         sys.exit(1)
 
-    """ init logger """
+    # init logger
     if config['log_target'] == 'syslog':
-        logging = Logger.getSyslogLogger(config)
+        logging = Logger.get_syslog_logger(config)
     elif config['log_target'] == 'file':
-        logging = Logger.getFileLogger(config)
+        logging = Logger.get_file_logger(config)
     elif config['log_target'] == 'stdout':
-        logging = Logger.getStdoutLogger(config)
+        logging = Logger.get_stdout_logger(config)
     else:
         # Fallback to stdout if log_target is misconfigured
-        logging = Logger.getStdoutLogger(config)
+        logging = Logger.get_stdout_logger(config)
 
-    logging.info("{0}-{1} milter startup".format(NAME, VERSION))
+    logging.info("%s-%s milter startup", NAME, VERSION)
 
     Cfg.config = config
     Cfg.logging = logging
+
+    init_metrics(config, logging, VERSION)
 
     Milter.factory = MailHeaderCheckMilter
 
     flags = Milter.ADDHDRS
     Milter.set_flags(flags)
+
+    config_path = params.config
+
+    def handle_sighup(_signum: int, _frame: object) -> None:
+        """Handle SIGHUP by reloading the config file."""
+        logging.info("%s: SIGHUP received, reloading config", NAME)
+        try:
+            new_config = Cfg.find_and_parse_config_file(config_path)
+        except SystemExit:
+            logging.error("%s: Config reload aborted: could not read config file", NAME)
+            record_config_reload(False)
+            return
+        new_errors, new_warnings = Cfg.validate_config(new_config, allowed_checks)
+        for wrn in new_warnings:
+            logging.warning("%s: Config warning: %s", NAME, wrn)
+        if new_errors:
+            for err in new_errors:
+                logging.error("%s: Config reload failed: %s", NAME, err)
+            logging.error(
+                "%s: Config NOT reloaded — fix errors above and send SIGHUP again",
+                NAME
+            )
+            record_config_reload(False)
+            return
+        Cfg.config = new_config
+        logging.info("%s: Config reloaded successfully", NAME)
+        record_config_reload(True)
+
+    signal.signal(signal.SIGHUP, handle_sighup)
 
     Milter.runmilter(NAME, config['socket'], timeout=300)
 
